@@ -1,48 +1,101 @@
-import { ScrollView, Text, View, TouchableOpacity } from "react-native";
+import { Image } from "expo-image";
+import { router } from "expo-router";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { WallpaperCard } from "@/components/wallpaper-card";
 import { ScreenContainer } from "@/components/screen-container";
+import { categories, wallpapers } from "@/data/wallpapers";
 
-/**
- * Home Screen - NativeWind Example
- *
- * This template uses NativeWind (Tailwind CSS for React Native).
- * You can use familiar Tailwind classes directly in className props.
- *
- * Key patterns:
- * - Use `className` instead of `style` for most styling
- * - Theme colors: use tokens directly (bg-background, text-foreground, bg-primary, etc.); no dark: prefix needed
- * - Responsive: standard Tailwind breakpoints work on web
- * - Custom colors defined in tailwind.config.js
- */
-export default function HomeScreen() {
+export default function DiscoverScreen() {
   return (
-    <ScreenContainer className="p-6">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 gap-8">
-          {/* Hero Section */}
-          <View className="items-center gap-2">
-            <Text className="text-4xl font-bold text-foreground">Welcome</Text>
-            <Text className="text-base text-muted text-center">
-              Edit app/(tabs)/index.tsx to get started
-            </Text>
-          </View>
+    <ScreenContainer>
+      <FlatList
+        data={wallpapers}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.content}
+        renderItem={({ item }) => <WallpaperCard wallpaper={item} />}
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.eyebrow}>WALLIFY</Text>
+                <Text style={styles.heading}>发现你的下一张壁纸</Text>
+                <Text style={styles.subheading}>米哈游游戏壁纸精选，适合手机浏览与收藏。</Text>
+              </View>
+              <Image source={{ uri: "https://lkr2312.dpdns.org/assets/images/logo-nav.png?v=2" }} style={styles.logo} contentFit="contain" />
+            </View>
 
-          {/* Example Card */}
-          <View className="w-full max-w-sm self-center bg-surface rounded-2xl p-6 shadow-sm border border-border">
-            <Text className="text-lg font-semibold text-foreground mb-2">NativeWind Ready</Text>
-            <Text className="text-sm text-muted leading-relaxed">
-              Use Tailwind CSS classes directly in your React Native components.
-            </Text>
-          </View>
+            <Pressable
+              onPress={() => router.push("/search" as never)}
+              style={({ pressed }) => [styles.searchShortcut, pressed && styles.shortcutPressed]}
+            >
+              <IconSymbol name="magnifyingglass" size={20} color="#A6A5B5" />
+              <Text style={styles.searchPlaceholder}>搜索角色、标题或游戏</Text>
+            </Pressable>
 
-          {/* Example Button */}
-          <View className="items-center">
-            <TouchableOpacity className="bg-primary px-6 py-3 rounded-full active:opacity-80">
-              <Text className="text-background font-semibold">Get Started</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>游戏分类</Text>
+              <Pressable onPress={() => router.push("/category/random" as never)} style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
+                <Text style={styles.textButtonLabel}>随机发现</Text>
+                <IconSymbol name="arrow.right" size={15} color="#7D9EFF" />
+              </Pressable>
+            </View>
+
+            <View style={styles.categories}>
+              {categories.map((category) => (
+                <Pressable
+                  key={category.slug}
+                  onPress={() => router.push(`/category/${category.slug}` as never)}
+                  style={({ pressed }) => [styles.categoryCard, pressed && styles.categoryPressed]}
+                >
+                  <View style={[styles.categoryIcon, { backgroundColor: `${category.tint}24` }]}>
+                    <IconSymbol name={category.icon} size={20} color={category.tint} />
+                  </View>
+                  <Text numberOfLines={1} style={styles.categoryLabel}>{category.shortTitle}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>最近收录</Text>
+                <Text style={styles.sectionDescription}>来自 Wallify 的公开壁纸</Text>
+              </View>
+              <Pressable onPress={() => router.push("/category/random" as never)} style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
+                <Text style={styles.textButtonLabel}>查看全部</Text>
+                <IconSymbol name="arrow.right" size={15} color="#7D9EFF" />
+              </Pressable>
+            </View>
+          </>
+        }
+      />
     </ScreenContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  content: { paddingHorizontal: 16, paddingBottom: 30 },
+  row: { gap: 12, marginBottom: 12 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 13, paddingBottom: 20 },
+  eyebrow: { color: "#7D9EFF", fontSize: 11, fontWeight: "800", letterSpacing: 1.8 },
+  heading: { marginTop: 6, maxWidth: 270, color: "#F6F6FB", fontSize: 29, lineHeight: 37, fontWeight: "800", letterSpacing: -0.6 },
+  subheading: { marginTop: 8, maxWidth: 270, color: "#A6A5B5", fontSize: 13, lineHeight: 19 },
+  logo: { width: 45, height: 45, marginTop: 4 },
+  searchShortcut: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 49, borderRadius: 15, backgroundColor: "#171722", paddingHorizontal: 15 },
+  shortcutPressed: { opacity: 0.68 },
+  searchPlaceholder: { color: "#A6A5B5", fontSize: 14 },
+  sectionHeader: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginTop: 28, marginBottom: 13 },
+  sectionTitle: { color: "#F6F6FB", fontSize: 20, lineHeight: 26, fontWeight: "800" },
+  sectionDescription: { marginTop: 3, color: "#A6A5B5", fontSize: 12, lineHeight: 17 },
+  textButton: { flexDirection: "row", alignItems: "center", gap: 2, paddingVertical: 6 },
+  textButtonPressed: { opacity: 0.6 },
+  textButtonLabel: { color: "#7D9EFF", fontSize: 13, fontWeight: "700" },
+  categories: { flexDirection: "row", gap: 8 },
+  categoryCard: { flex: 1, alignItems: "center", gap: 7, minWidth: 0, paddingVertical: 9 },
+  categoryPressed: { opacity: 0.6, transform: [{ scale: 0.97 }] },
+  categoryIcon: { width: 47, height: 47, alignItems: "center", justifyContent: "center", borderRadius: 16 },
+  categoryLabel: { width: "100%", color: "#DAD9E5", fontSize: 10, lineHeight: 14, fontWeight: "700", textAlign: "center" },
+});
