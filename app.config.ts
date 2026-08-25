@@ -28,11 +28,11 @@ const schemeFromBundleId = `manus${timestamp}`;
 
 const env = {
   // App branding - update these values directly (do not use env vars)
-  appName: "Wallify壁纸",
+  appName: "wallify",
   appSlug: "wallpaper-share-mobile",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
   // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "/manus-storage/icon_445e6dfb.png",
+  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663644603969/EFLcuWZwESzpWNls.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
