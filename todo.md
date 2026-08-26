@@ -59,3 +59,9 @@
 - [x] 为中间上传按钮加入稳定的缩放按压反馈
 - [x] 将当前 Wallify 项目提交并推送到 GitHub 仓库 wallifyApp
 - [x] 在 GitHub Actions 中添加手动 Android 本地构建与 APK 上传工作流
+- [x] 使用用户提供的临时 GitHub 授权推送已验证的构建工作流
+- [x] 生成持久 Android 签名密钥并导入 GitHub Actions Secrets
+- [x] 让 Android 本地构建工作流使用仓库签名密钥
+- [x] 将 Keystore Base64、密钥库密码、别名和密钥密码导入 GitHub Actions Secrets
+- [ ] 将当前 Android Keystore 与签名参数同步到 Expo 云端凭证
+- [ ] 使用 Expo Access Token 关联 EAS 项目并上传当前 Android 签名凭证
