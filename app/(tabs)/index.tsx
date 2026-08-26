@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -11,8 +12,17 @@ import { trpc } from "@/lib/trpc";
 
 export default function DiscoverScreen() {
   const latest = trpc.wallify.latest.useQuery({ limit: 20 }, { staleTime: 0, refetchOnMount: "always" });
+  const [refreshing, setRefreshing] = useState(false);
   const liveWallpapers = latest.data?.map(toWallpaper) ?? [];
   const items = liveWallpapers.length ? liveWallpapers : wallpapers;
+  const refreshLatest = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await latest.refetch({ cancelRefetch: true });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [latest]);
 
   return (
     <ScreenContainer>
@@ -22,7 +32,7 @@ export default function DiscoverScreen() {
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={latest.isFetching && !latest.isLoading} onRefresh={() => void latest.refetch()} tintColor="#7D9EFF" colors={["#7D9EFF"]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refreshLatest()} tintColor="#7D9EFF" colors={["#7D9EFF"]} />}
         renderItem={({ item }) => <WallpaperCard wallpaper={item} />}
         ListHeaderComponent={
           <>
@@ -78,7 +88,7 @@ export default function DiscoverScreen() {
             </View>
           </>
         }
-        ListFooterComponent={latest.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步 Wallify 最新上传…</Text></View> : latest.isError ? <Text style={styles.fallbackText}>当前展示本地缓存内容；下拉即可重试同步。</Text> : <Text style={styles.syncText}>已同步官网最新上传 · 下拉刷新</Text>}
+        ListFooterComponent={latest.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步 Wallify 最新上传…</Text></View> : latest.isError ? <Text style={styles.fallbackText}>当前展示本地缓存内容；下拉即可重试同步。</Text> : <Text style={styles.syncText}>已同步官网最新上传 · 下拉刷新以检查新壁纸</Text>}
       />
     </ScreenContainer>
   );

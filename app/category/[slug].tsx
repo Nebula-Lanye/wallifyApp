@@ -1,17 +1,33 @@
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import { EmptyState } from "@/components/empty-state";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { WallpaperCard } from "@/components/wallpaper-card";
 import { GameSlug, getCategory, wallpapers } from "@/data/wallpapers";
+import { toWallpaper } from "@/data/wallify-feed";
+import { trpc } from "@/lib/trpc";
 
 export default function CategoryScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const category = getCategory(slug);
-  const items = slug === "random" ? [...wallpapers].sort((a, b) => b.id.localeCompare(a.id)) : wallpapers.filter((item) => item.category === (slug as GameSlug));
+  const normalizedSlug = category ? slug : "genshin";
+  const liveCategory = trpc.wallify.category.useQuery({ slug: normalizedSlug, limit: 60 }, { enabled: Boolean(category), staleTime: 0, refetchOnMount: "always" });
+  const [refreshing, setRefreshing] = useState(false);
+  const liveItems = liveCategory.data?.map(toWallpaper) ?? [];
+  const items = liveItems.length ? liveItems : slug === "random" ? [...wallpapers].sort((a, b) => b.id.localeCompare(a.id)) : wallpapers.filter((item) => item.category === (slug as GameSlug));
   const title = slug === "random" ? "随机发现" : category?.title ?? "壁纸浏览";
+  const refreshCategory = useCallback(async () => {
+    if (!category) return;
+    setRefreshing(true);
+    try {
+      await liveCategory.refetch({ cancelRefetch: true });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [category, liveCategory]);
 
   return (
     <ScreenContainer>
@@ -22,6 +38,7 @@ export default function CategoryScreen() {
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refreshCategory()} tintColor="#7D9EFF" colors={["#7D9EFF"]} />}
         renderItem={({ item }) => <WallpaperCard wallpaper={item} />}
         ListHeaderComponent={
           <View style={styles.header}>
@@ -34,7 +51,7 @@ export default function CategoryScreen() {
             </View>
           </View>
         }
-        ListEmptyComponent={<EmptyState title="该分类暂时没有壁纸" description="可在 Wallify 网站中继续浏览或稍后再来看看。" />}
+        ListEmptyComponent={liveCategory.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步分类壁纸…</Text></View> : <EmptyState title="该分类暂时没有壁纸" description="请下拉刷新后再试。" />}
       />
     </ScreenContainer>
   );
@@ -49,5 +66,6 @@ const styles = StyleSheet.create({
   headingArea: { paddingRight: 12 },
   title: { color: "#F6F6FB", fontSize: 29, lineHeight: 37, fontWeight: "800" },
   subtitle: { marginTop: 6, color: "#A6A5B5", fontSize: 13, lineHeight: 19 },
+  loading: { alignItems: "center", gap: 8, paddingTop: 80 },
+  loadingText: { color: "#A6A5B5", fontSize: 13 },
 });
-

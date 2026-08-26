@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { fetchLatestWallpapers, fetchRandomWallpaper, fetchWallpaper, getSessionProfile, signInWallify, signOutWallify, uploadWallpaper } from "./wallify-client";
+import { fetchCategoryWallpapers, fetchLatestWallpapers, fetchRandomWallpaper, fetchWallpaper, getSessionProfile, signInWallify, signOutWallify, uploadWallpaper } from "./wallify-client";
 import { fetchWallifyProfile } from "./wallify-profile";
 
 export const appRouter = router({
@@ -28,6 +28,9 @@ export const appRouter = router({
     latest: publicProcedure
       .input(z.object({ limit: z.number().int().min(1).max(40).default(20) }))
       .query(({ input }) => fetchLatestWallpapers(input.limit)),
+    category: publicProcedure
+      .input(z.object({ slug: z.string().regex(/^(genshin|starrail|honkai3|zzz)$/), limit: z.number().int().min(1).max(80).default(60) }))
+      .query(({ input }) => fetchCategoryWallpapers(input.slug, input.limit)),
     random: publicProcedure
       .input(z.object({ source: z.string().min(1).max(32), category: z.string().min(1).max(32) }))
       .query(({ input }) => fetchRandomWallpaper(input.source, input.category)),

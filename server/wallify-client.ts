@@ -210,12 +210,21 @@ export function parseWallpaperCards(html: string): WallifyWallpaper[] {
 }
 
 export async function fetchLatestWallpapers(limit = 20) {
-  const response = await originFetch("/");
+  const response = await originFetch(`/?_=${Date.now()}`);
   if (!response.ok) throw new Error("暂时无法读取 Wallify 最新上传");
   const sectionStart = response.body.indexOf("最新上传");
   const sectionEnd = response.body.indexOf("热门壁纸", sectionStart);
   const latestSection = sectionStart >= 0 ? response.body.slice(sectionStart, sectionEnd >= 0 ? sectionEnd : undefined) : response.body;
   return parseWallpaperCards(latestSection).slice(0, limit);
+}
+
+const WALLIFY_CATEGORY_SLUGS = new Set(["genshin", "starrail", "honkai3", "zzz"]);
+
+export async function fetchCategoryWallpapers(slug: string, limit = 60) {
+  if (!WALLIFY_CATEGORY_SLUGS.has(slug)) throw new Error("无效的游戏分类");
+  const response = await originFetch(`/pages/category.php?slug=${encodeURIComponent(slug)}&_=${Date.now()}`);
+  if (!response.ok) throw new Error("暂时无法读取该分类的 Wallify 壁纸");
+  return parseWallpaperCards(response.body).slice(0, limit);
 }
 
 export type RandomWallpaper = {
