@@ -136,7 +136,7 @@ export default function UploadScreen() {
         <IconSymbol name="lock.fill" size={30} color="#A777FF" />
         <Text style={styles.emptyTitle}>请先登录 Wallify</Text>
         <Text style={styles.emptyCopy}>上传会使用当前应用内的 Wallify 登录会话。</Text>
-        <Pressable onPress={() => router.replace({ pathname: "/login", params: { redirectTo: "/upload" } } as never)} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryText}>前往登录</Text></Pressable>
+        <Pressable onPress={() => router.replace({ pathname: "/login", params: { redirectTo: "/upload-wallpaper" } } as never)} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryText}>前往登录</Text></Pressable>
       </ScreenContainer>
     );
   }

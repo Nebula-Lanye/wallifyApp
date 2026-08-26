@@ -1,10 +1,10 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Image } from "expo-image";
+import { Image } from "react-native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
@@ -43,9 +43,13 @@ export default function RootLayout() {
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
   const [frame, setFrame] = useState<Rect>(initialFrame);
   const [isLaunchVisible, setIsLaunchVisible] = useState(true);
+  const nativeSplashHidden = useRef(false);
 
-  useEffect(() => {
-    void SplashScreen.hideAsync();
+  const handleRootLayout = useCallback(() => {
+    if (nativeSplashHidden.current) return;
+    nativeSplashHidden.current = true;
+    // Keep the native splash over the first committed frame so there is no blank flash.
+    setTimeout(() => void SplashScreen.hideAsync(), 140);
   }, []);
 
   // Initialize Manus runtime for cookie injection from parent container
@@ -121,7 +125,7 @@ export default function RootLayout() {
           <SafeAreaProvider initialMetrics={providerInitialMetrics}>
             <SafeAreaFrameContext.Provider value={frame}>
               <SafeAreaInsetsContext.Provider value={insets}>
-                <View style={styles.root}>{content}{isLaunchVisible ? <LaunchOverlay onFinish={() => setIsLaunchVisible(false)} /> : null}</View>
+                <View style={styles.root} onLayout={handleRootLayout}>{content}{isLaunchVisible ? <LaunchOverlay onFinish={() => setIsLaunchVisible(false)} /> : null}</View>
               </SafeAreaInsetsContext.Provider>
           </SafeAreaFrameContext.Provider>
         </SafeAreaProvider>
@@ -131,7 +135,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <SafeAreaProvider initialMetrics={providerInitialMetrics}><View style={styles.root}>{content}{isLaunchVisible ? <LaunchOverlay onFinish={() => setIsLaunchVisible(false)} /> : null}</View></SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={providerInitialMetrics}><View style={styles.root} onLayout={handleRootLayout}>{content}{isLaunchVisible ? <LaunchOverlay onFinish={() => setIsLaunchVisible(false)} /> : null}</View></SafeAreaProvider>
     </ThemeProvider>
   );
 }
@@ -143,15 +147,15 @@ function LaunchOverlay({ onFinish }: { onFinish: () => void }) {
       progress.value = withTiming(0, { duration: 300, easing: Easing.bezier(0.22, 0.61, 0.36, 1), reduceMotion: ReduceMotion.System }, (finished) => {
         if (finished) runOnJS(onFinish)();
       });
-    }, 720);
+    }, 1600);
     return () => clearTimeout(timer);
   }, [onFinish, progress]);
   const animatedStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
-  return <Animated.View pointerEvents="none" style={[styles.launchOverlay, animatedStyle]}><Image source={require("../assets/images/wallify-launch-lower-third.png")} style={styles.launchImage} contentFit="cover" /></Animated.View>;
+  return <Animated.View style={[styles.launchOverlay, animatedStyle]}><Image source={require("../assets/images/wallify-launch-lower-third.png")} style={styles.launchImage} resizeMode="cover" /></Animated.View>;
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  launchOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100, backgroundColor: "#3C3C3B" },
+  launchOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100, backgroundColor: "#3C3C3B", pointerEvents: "none" },
   launchImage: { flex: 1, width: "100%", height: "100%" },
 });

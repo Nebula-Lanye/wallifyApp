@@ -15,7 +15,7 @@ export default function LoginScreen() {
   const { saveProfile } = useWallifyProfile();
   const { saveSession } = useWallifySession();
   const login = trpc.wallify.login.useMutation();
-  const destination = redirectTo === "/upload" ? "/upload" : "/settings";
+  const destination = redirectTo === "/upload-wallpaper" ? "/upload-wallpaper" : "/settings";
 
   const handleLogin = async () => {
     if (!account.trim() || !password) {

@@ -58,7 +58,7 @@ function UploadTabButton() {
 
   return (
     <AnimatedPressable
-      onPress={() => router.navigate("/upload" as never)}
+      onPress={() => router.push("/upload-wallpaper" as never)}
       onPressIn={() => animate(0.94, 85)}
       onPressOut={() => animate(1, 190)}
       style={[styles.uploadTab, animatedStyle]}

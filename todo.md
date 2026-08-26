@@ -71,3 +71,6 @@
 
 **说明：** 本轮签名重置使用用户指定的 `android` 密码与别名；Keystore 不应提交到 Git。 
 - [x] 在 build.yml 的 Install EAS CLI 后添加 Set up Expo token 并推送到 GitHub
+- [x] 修复启动页 Logo 前置空白、闪现过快与可见时长不足
+- [x] 修复点击底部上传按钮后出现白屏的路由或渲染问题
+- [x] 验证启动页与上传入口在移动端构建中的稳定性

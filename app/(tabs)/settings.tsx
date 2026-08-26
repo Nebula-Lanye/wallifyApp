@@ -96,7 +96,7 @@ export default function SettingsScreen() {
         <View style={styles.header}><Text style={styles.title}>设置</Text><Text style={styles.subtitle}>账户、资料和壁纸管理均在应用内完成。</Text></View>
         <Text style={styles.groupLabel}>账户</Text>
         {loading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /></View> : displayedProfile ? (
-          <ProfileCard profile={displayedProfile} isNativeSignedIn={Boolean(session)} isRefreshing={resolveProfile.isPending || refreshSessionProfile.isFetching} onRefresh={() => void handleRefresh()} onEdit={() => router.push("/profile-edit" as never)} onUpload={() => session ? router.push("/upload" as never) : router.push("/login" as never)} onSignOut={handleSignOut} onUnlink={handleUnlink} />
+          <ProfileCard profile={displayedProfile} isNativeSignedIn={Boolean(session)} isRefreshing={resolveProfile.isPending || refreshSessionProfile.isFetching} onRefresh={() => void handleRefresh()} onEdit={() => router.push("/profile-edit" as never)} onUpload={() => session ? router.push("/upload-wallpaper" as never) : router.push("/login" as never)} onSignOut={handleSignOut} onUnlink={handleUnlink} />
         ) : <GuestCard onLogin={() => router.push("/login" as never)} onLink={() => setIsLinkSheetVisible(true)} />}
         {!displayedProfile ? null : <View style={styles.note}><IconSymbol name="lock.fill" size={16} color="#FFB86B" /><Text style={styles.noteText}>公开资料关联只读取用户 ID 对应的公开信息，不需要填写密码。登录仅用于上传和账户权限操作。</Text></View>}
         <Text style={styles.groupLabel}>帮助与协议</Text>
