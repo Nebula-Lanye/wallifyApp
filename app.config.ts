@@ -41,7 +41,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.7.2",
+  version: "1.7.3",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -50,7 +50,7 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
-    buildNumber: "2",
+    buildNumber: "3",
     "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -62,7 +62,7 @@ const config: ExpoConfig = {
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
-    versionCode: 2,
+    versionCode: 3,
     package: env.androidPackage,
     permissions: ["POST_NOTIFICATIONS"],
     intentFilters: [
@@ -103,13 +103,19 @@ const config: ExpoConfig = {
     [
       "expo-splash-screen",
       {
-        image: "./assets/images/splash-icon.png",
-        imageWidth: 300,
+        image: "./assets/images/android-icon-foreground.png",
+        imageWidth: 176,
         resizeMode: "contain",
         backgroundColor: "#3C3C3B",
         dark: {
           backgroundColor: "#3C3C3B",
         },
+      },
+    ],
+    [
+      "expo-image-picker",
+      {
+        photosPermission: "Allow $(PRODUCT_NAME) to choose a profile avatar.",
       },
     ],
     [

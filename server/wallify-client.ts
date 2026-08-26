@@ -208,6 +208,35 @@ export async function updateWallifyProfile(input: { sessionId: string; username:
   return profile;
 }
 
+export async function updateWallifyAvatar(input: {
+  sessionId: string;
+  fileName: string;
+  mimeType: string;
+  fileBase64: string;
+}) {
+  const session = requireSession(input.sessionId);
+  const bytes = Buffer.from(input.fileBase64, "base64");
+  if (!bytes.length || bytes.length > 5 * 1024 * 1024) throw new Error("头像图片必须在 5MB 以内");
+  if (!/^image\/(jpeg|png|webp|gif)$/.test(input.mimeType)) throw new Error("头像仅支持 JPG、PNG、WebP 或 GIF 图片");
+
+  const settingsPage = await getSettingsPage(session);
+  const csrfToken = extractCsrf(settingsPage);
+  const extension = input.mimeType === "image/jpeg" ? "jpg" : input.mimeType.split("/")[1] || "jpg";
+  const safeFileName = input.fileName.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 160) || `avatar.${extension}`;
+  const body = new FormData();
+  body.append("csrf_token", csrfToken);
+  body.append("avatar", new Blob([bytes], { type: input.mimeType }), safeFileName);
+
+  const response = await originFetch("/api/upload_avatar.php", { method: "POST", body }, session.cookie);
+  const result = readJson<{ success?: boolean; message?: string }>(response);
+  if (!response.ok || !result?.success) throw new Error(result?.message || "头像上传失败");
+
+  const profile = await fetchWallifyProfile(session.profile.profileId);
+  session.profile = profile;
+  session.expiresAt = Date.now() + SESSION_TTL_MS;
+  return profile;
+}
+
 export async function fetchWallifyTerms() {
   const response = await originFetch("/pages/terms.php");
   if (!response.ok) throw new Error("暂时无法读取用户协议");

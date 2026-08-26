@@ -5,6 +5,7 @@ export type LinkedWallifyProfile = {
   profileId: number;
   nickname: string;
   avatarUrl: string;
+  avatarRevision?: number;
   profileUrl: string;
   signature: string | null;
   uploadCount: number | null;

@@ -1,11 +1,10 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Image } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import Animated, { Easing, ReduceMotion, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -151,11 +150,20 @@ function LaunchOverlay({ onFinish }: { onFinish: () => void }) {
     return () => clearTimeout(timer);
   }, [onFinish, progress]);
   const animatedStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
-  return <Animated.View style={[styles.launchOverlay, animatedStyle]}><Image source={require("../assets/images/wallify-launch-lower-third.png")} style={styles.launchImage} resizeMode="cover" /></Animated.View>;
+  return (
+    <Animated.View style={[styles.launchOverlay, animatedStyle]}>
+      <Image
+        source={require("../assets/images/splash-icon.png")}
+        style={styles.launchLogo}
+        resizeMode="contain"
+        accessibilityLabel="Wallify"
+      />
+    </Animated.View>
+  );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
   launchOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100, backgroundColor: "#3C3C3B", pointerEvents: "none" },
-  launchImage: { flex: 1, width: "100%", height: "100%" },
+  launchLogo: { position: "absolute", top: "62%", alignSelf: "center", width: "54%", aspectRatio: 1497 / 510 },
 });
