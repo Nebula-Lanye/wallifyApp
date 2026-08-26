@@ -3,7 +3,8 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as MediaLibrary from "expo-media-library";
 import { Image } from "expo-image";
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -24,6 +25,7 @@ export default function WallpaperDetailScreen() {
   } : null;
   const wallpaper = remoteWallpaper ?? getWallpaper(id);
   const { isFavorite, toggleFavorite } = useFavorites();
+  const [imageAspectRatio, setImageAspectRatio] = useState(1);
 
   if (remoteDetail.isLoading && !wallpaper) {
     return (
@@ -96,47 +98,61 @@ export default function WallpaperDetailScreen() {
   return (
     <ScreenContainer edges={["top", "bottom", "left", "right"]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.mediaArea}>
-        <Image source={{ uri: wallpaper.fullImageUrl }} style={styles.image} contentFit="cover" transition={180} accessibilityLabel={wallpaper.title} />
-        <View style={styles.imageShade} />
-        <View style={styles.topActions}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.roundButton, pressed && styles.roundPressed]} accessibilityLabel="返回">
-            <IconSymbol name="chevron.left" size={24} color="#FFFFFF" />
-          </Pressable>
-          <View style={styles.topRight}>
-            <Pressable onPress={handleShare} style={({ pressed }) => [styles.roundButton, pressed && styles.roundPressed]} accessibilityLabel="分享壁纸链接">
-              <IconSymbol name="square.and.arrow.up" size={21} color="#FFFFFF" />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
+        <View style={[styles.mediaArea, { aspectRatio: imageAspectRatio }]}>
+          <Image
+            source={{ uri: wallpaper.fullImageUrl }}
+            style={styles.image}
+            contentFit="contain"
+            transition={180}
+            accessibilityLabel={wallpaper.title}
+            onLoad={({ source }) => {
+              if (source.width && source.height) {
+                setImageAspectRatio(Math.min(Math.max(source.width / source.height, 0.52), 2.15));
+              }
+            }}
+          />
+          <View style={styles.imageShade} />
+          <View style={styles.topActions}>
+            <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.roundButton, pressed && styles.roundPressed]} accessibilityLabel="返回">
+              <IconSymbol name="chevron.left" size={24} color="#FFFFFF" />
             </Pressable>
-            <Pressable onPress={() => void handleFavorite()} style={({ pressed }) => [styles.roundButton, favorite && styles.favoritedButton, pressed && styles.roundPressed]} accessibilityLabel={favorite ? "取消收藏" : "收藏壁纸"}>
-              <IconSymbol name={favorite ? "heart.fill" : "heart"} size={21} color="#FFFFFF" />
-            </Pressable>
+            <View style={styles.topRight}>
+              <Pressable onPress={handleShare} style={({ pressed }) => [styles.roundButton, pressed && styles.roundPressed]} accessibilityLabel="分享壁纸链接">
+                <IconSymbol name="square.and.arrow.up" size={21} color="#FFFFFF" />
+              </Pressable>
+              <Pressable onPress={() => void handleFavorite()} style={({ pressed }) => [styles.roundButton, favorite && styles.favoritedButton, pressed && styles.roundPressed]} accessibilityLabel={favorite ? "取消收藏" : "收藏壁纸"}>
+                <IconSymbol name={favorite ? "heart.fill" : "heart"} size={21} color="#FFFFFF" />
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
-      <View style={styles.infoPanel}>
-        <View style={styles.pill}><Text style={styles.pillText}>{category?.title ?? "Wallify"}</Text></View>
-        <Text style={styles.title}>{wallpaper.title}</Text>
-        <Text style={styles.byline}>发布者 · {wallpaper.author}</Text>
-        <Text style={styles.description}>正在展示 Wallify 的原图预览。可直接保存至相册，并在应用内完成收藏与分享。</Text>
-        <Pressable onPress={() => void saveWallpaper()} style={({ pressed }) => [styles.sourceButton, pressed && styles.primaryPressed]}>
-          <IconSymbol name="arrow.down.to.line" size={19} color="#FFFFFF" />
-          <Text style={styles.sourceText}>保存原图到相册</Text>
-        </Pressable>
-      </View>
+        <View style={styles.infoPanel}>
+          <View style={styles.pill}><Text style={styles.pillText}>{category?.title ?? "Wallify"}</Text></View>
+          <Text style={styles.title}>{wallpaper.title}</Text>
+          <Text style={styles.byline}>发布者 · {wallpaper.author}</Text>
+          <Text style={styles.description}>正在展示 Wallify 的原图预览。可直接保存至相册，并在应用内完成收藏与分享。</Text>
+          <Pressable onPress={() => void saveWallpaper()} style={({ pressed }) => [styles.sourceButton, pressed && styles.primaryPressed]}>
+            <IconSymbol name="arrow.down.to.line" size={19} color="#FFFFFF" />
+            <Text style={styles.sourceText}>保存原图到相册</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  mediaArea: { flex: 1, minHeight: 330, backgroundColor: "#171722" },
-  image: { width: "100%", height: "100%", position: "absolute" },
-  imageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(6, 6, 13, 0.16)" },
+  scrollContent: { flexGrow: 1 },
+  mediaArea: { width: "100%", minHeight: 220, backgroundColor: "#171722" },
+  image: { width: "100%", height: "100%" },
+  imageShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(6, 6, 13, 0.08)", pointerEvents: "none" },
   topActions: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 10 },
   topRight: { flexDirection: "row", gap: 9 },
   roundButton: { alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(12, 12, 22, 0.62)" },
   favoritedButton: { backgroundColor: "#C95594" },
   roundPressed: { opacity: 0.72, transform: [{ scale: 0.97 }] },
-  infoPanel: { marginTop: -26, minHeight: 274, borderTopLeftRadius: 27, borderTopRightRadius: 27, backgroundColor: "#0B0B12", padding: 22 },
+  infoPanel: { minHeight: 274, borderTopLeftRadius: 27, borderTopRightRadius: 27, backgroundColor: "#0B0B12", padding: 22 },
   pill: { alignSelf: "flex-start", borderRadius: 999, backgroundColor: "#273865", paddingHorizontal: 10, paddingVertical: 5 },
   pillText: { color: "#BED0FF", fontSize: 11, fontWeight: "800" },
   title: { marginTop: 12, color: "#F6F6FB", fontSize: 26, lineHeight: 34, fontWeight: "800" },

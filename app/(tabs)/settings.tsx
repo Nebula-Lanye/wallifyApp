@@ -27,14 +27,10 @@ function avatarProxy(url: string) {
 
 export default function SettingsScreen() {
   const [isLinkSheetVisible, setIsLinkSheetVisible] = useState(false);
-  const [isLoginSheetVisible, setIsLoginSheetVisible] = useState(false);
   const [profileIdInput, setProfileIdInput] = useState("");
-  const [accountInput, setAccountInput] = useState("");
-  const [passwordInput, setPasswordInput] = useState("");
   const { profile, isLoading, saveProfile, clearProfile } = useWallifyProfile();
   const { session, isLoading: isSessionLoading, saveSession, clearSession } = useWallifySession();
   const resolveProfile = trpc.wallifyProfile.resolve.useMutation();
-  const login = trpc.wallify.login.useMutation();
   const refreshSessionProfile = trpc.wallify.sessionProfile.useQuery({ sessionId: session?.sessionId ?? "00000000-0000-0000-0000-000000000000" }, { enabled: false });
   const logout = trpc.wallify.logout.useMutation();
 
@@ -51,23 +47,6 @@ export default function SettingsScreen() {
       setProfileIdInput("");
     } catch (error) {
       Alert.alert("关联失败", error instanceof Error ? error.message : "暂时无法读取该公开资料，请稍后再试。");
-    }
-  };
-
-  const handleLogin = async () => {
-    if (!accountInput.trim() || !passwordInput) {
-      Alert.alert("请填写账号与密码", "账号密码只用于本次加密登录请求，不会保存在设备中。");
-      return;
-    }
-    try {
-      const result = await login.mutateAsync({ account: accountInput.trim(), password: passwordInput });
-      const nativeProfile = result.profile as LinkedWallifyProfile;
-      await saveSession({ sessionId: result.sessionId, profile: nativeProfile });
-      await saveProfile(nativeProfile);
-      setPasswordInput("");
-      setIsLoginSheetVisible(false);
-    } catch (error) {
-      Alert.alert("登录失败", error instanceof Error ? error.message : "请稍后再试。");
     }
   };
 
@@ -92,7 +71,7 @@ export default function SettingsScreen() {
   };
 
   const handleSignOut = () => {
-    Alert.alert("退出原生登录", "这只会清除本应用内的 Wallify 会话；公开资料关联会保留。", [
+    Alert.alert("退出登录", "这只会清除本应用内的 Wallify 会话；公开资料关联会保留。", [
       { text: "取消", style: "cancel" },
       { text: "退出", style: "destructive", onPress: () => { if (session) void logout.mutateAsync({ sessionId: session.sessionId }).catch(() => undefined); void clearSession(); } },
     ]);
@@ -112,20 +91,19 @@ export default function SettingsScreen() {
         <View style={styles.header}><Text style={styles.title}>设置</Text><Text style={styles.subtitle}>账户、资料和壁纸管理均在应用内完成。</Text></View>
         <Text style={styles.groupLabel}>账户</Text>
         {loading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /></View> : displayedProfile ? (
-          <ProfileCard profile={displayedProfile} isNativeSignedIn={Boolean(session)} isRefreshing={resolveProfile.isPending || refreshSessionProfile.isFetching} onRefresh={() => void handleRefresh()} onUpload={() => session ? router.push("/upload" as never) : setIsLoginSheetVisible(true)} onSignOut={handleSignOut} onUnlink={handleUnlink} />
-        ) : <GuestCard onLogin={() => setIsLoginSheetVisible(true)} onLink={() => setIsLinkSheetVisible(true)} />}
-        {!displayedProfile ? null : <View style={styles.note}><IconSymbol name="lock.fill" size={16} color="#FFB86B" /><Text style={styles.noteText}>公开资料关联只读取用户 ID 对应的公开信息，不需要填写密码。原生登录仅用于上传和账户权限操作。</Text></View>}
+          <ProfileCard profile={displayedProfile} isNativeSignedIn={Boolean(session)} isRefreshing={resolveProfile.isPending || refreshSessionProfile.isFetching} onRefresh={() => void handleRefresh()} onUpload={() => session ? router.push("/upload" as never) : router.push("/login" as never)} onSignOut={handleSignOut} onUnlink={handleUnlink} />
+        ) : <GuestCard onLogin={() => router.push("/login" as never)} onLink={() => setIsLinkSheetVisible(true)} />}
+        {!displayedProfile ? null : <View style={styles.note}><IconSymbol name="lock.fill" size={16} color="#FFB86B" /><Text style={styles.noteText}>公开资料关联只读取用户 ID 对应的公开信息，不需要填写密码。登录仅用于上传和账户权限操作。</Text></View>}
         <Text style={styles.groupLabel}>关于应用</Text>
         <View style={styles.infoGroup}><InfoRow icon="info.circle.fill" title="全原生体验" copy="浏览、详情、收藏、下载、资料和上传均无需打开浏览器。" /><InfoRow icon="lock.fill" title="数据与隐私" copy="密码不写入本地存储；公开资料仅保存在当前设备。" /></View>
       </ScrollView>
       <Modal animationType="slide" transparent visible={isLinkSheetVisible} onRequestClose={() => setIsLinkSheetVisible(false)}><View style={styles.sheetBackdrop}><View style={styles.sheet}><View style={styles.sheetHandle} /><Text style={styles.sheetTitle}>关联公开资料</Text><Text style={styles.sheetDescription}>填写 Wallify 用户 ID 即可显示公开头像、昵称、签名和统计信息，无需密码。</Text><TextInput value={profileIdInput} onChangeText={setProfileIdInput} keyboardType="number-pad" placeholder="Wallify 用户 ID" placeholderTextColor="#727181" style={styles.input} returnKeyType="done" onSubmitEditing={() => void handleLinkProfile()} /><Pressable onPress={() => void handleLinkProfile()} disabled={resolveProfile.isPending} style={({ pressed }) => [styles.primaryButton, (pressed || resolveProfile.isPending) && styles.pressed]}>{resolveProfile.isPending ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>查询并关联</Text>}</Pressable><Pressable onPress={() => setIsLinkSheetVisible(false)} style={styles.cancelButton}><Text style={styles.cancelText}>暂不关联</Text></Pressable></View></View></Modal>
-      <Modal animationType="slide" transparent visible={isLoginSheetVisible} onRequestClose={() => setIsLoginSheetVisible(false)}><View style={styles.sheetBackdrop}><View style={styles.sheet}><View style={styles.sheetHandle} /><Text style={styles.sheetTitle}>登录 Wallify</Text><Text style={styles.sheetDescription}>登录会话仅用于应用内上传和账户权限操作，密码不会保存在设备中。</Text><TextInput value={accountInput} onChangeText={setAccountInput} autoCapitalize="none" autoCorrect={false} placeholder="邮箱或用户名" placeholderTextColor="#727181" style={styles.input} /><TextInput value={passwordInput} onChangeText={setPasswordInput} secureTextEntry placeholder="密码" placeholderTextColor="#727181" style={styles.input} returnKeyType="done" onSubmitEditing={() => void handleLogin()} /><Pressable onPress={() => void handleLogin()} disabled={login.isPending} style={({ pressed }) => [styles.primaryButton, (pressed || login.isPending) && styles.pressed]}>{login.isPending ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>原生登录</Text>}</Pressable><Pressable onPress={() => setIsLoginSheetVisible(false)} style={styles.cancelButton}><Text style={styles.cancelText}>取消</Text></Pressable></View></View></Modal>
     </ScreenContainer>
   );
 }
 
-function GuestCard({ onLogin, onLink }: { onLogin: () => void; onLink: () => void }) { return <View style={styles.accountCard}><View style={styles.accountIcon}><IconSymbol name="person.crop.circle.fill" size={34} color="#A777FF" /></View><Text style={styles.accountTitle}>登录或关联你的资料</Text><Text style={styles.accountDescription}>登录后可上传壁纸；只想展示公开资料时，填写用户 ID 即可。</Text><Pressable onPress={onLogin} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryText}>原生登录</Text></Pressable><Pressable onPress={onLink} style={styles.secondaryButton}><Text style={styles.secondaryText}>仅关联公开资料</Text></Pressable></View>; }
-function ProfileCard({ profile, isNativeSignedIn, isRefreshing, onRefresh, onUpload, onSignOut, onUnlink }: { profile: LinkedWallifyProfile; isNativeSignedIn: boolean; isRefreshing: boolean; onRefresh: () => void; onUpload: () => void; onSignOut: () => void; onUnlink: () => void }) { return <View style={styles.accountCard}><View style={styles.profileTop}><Image source={{ uri: avatarProxy(profile.avatarUrl) }} style={styles.avatar} contentFit="cover" /><View style={styles.profileCopy}><View style={styles.statusLine}><View style={[styles.statusDot, !isNativeSignedIn && styles.publicDot]} /><Text style={styles.statusText}>{isNativeSignedIn ? "已原生登录" : "已关联公开资料"}</Text></View><Text style={styles.nickname}>{profile.nickname}</Text><Text style={styles.profileMeta}>Wallify 用户 ID · {profile.profileId}</Text></View></View><View style={styles.profileStats}><Stat value={profile.uploadCount} label="公开上传" /><Stat value={profile.followingCount} label="关注" /></View><View style={styles.signature}><IconSymbol name="quote.opening" size={15} color="#A777FF" /><Text style={styles.signatureText}>{profile.signature ?? "暂未填写公开个人签名"}</Text></View><Pressable onPress={onUpload} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><IconSymbol name="square.and.arrow.up" size={18} color="#FFFFFF" /><Text style={styles.primaryText}>{isNativeSignedIn ? "原生上传壁纸" : "登录后上传壁纸"}</Text></Pressable><View style={styles.actions}><Pressable onPress={onRefresh} disabled={isRefreshing} style={styles.secondaryButton}>{isRefreshing ? <ActivityIndicator color="#DAD9E5" /> : <Text style={styles.secondaryText}>刷新资料</Text>}</Pressable><Pressable onPress={isNativeSignedIn ? onSignOut : onUnlink} style={styles.textButton}><Text style={styles.textButtonLabel}>{isNativeSignedIn ? "退出登录" : "解除关联"}</Text></Pressable></View></View>; }
+function GuestCard({ onLogin, onLink }: { onLogin: () => void; onLink: () => void }) { return <View style={styles.accountCard}><View style={styles.accountIcon}><IconSymbol name="person.crop.circle.fill" size={34} color="#A777FF" /></View><Text style={styles.accountTitle}>登录或关联你的资料</Text><Text style={styles.accountDescription}>登录后可上传壁纸；只想展示公开资料时，填写用户 ID 即可。</Text><Pressable onPress={onLogin} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryText}>登录</Text></Pressable><Pressable onPress={onLink} style={styles.secondaryButton}><Text style={styles.secondaryText}>仅关联公开资料</Text></Pressable></View>; }
+function ProfileCard({ profile, isNativeSignedIn, isRefreshing, onRefresh, onUpload, onSignOut, onUnlink }: { profile: LinkedWallifyProfile; isNativeSignedIn: boolean; isRefreshing: boolean; onRefresh: () => void; onUpload: () => void; onSignOut: () => void; onUnlink: () => void }) { return <View style={styles.accountCard}><View style={styles.profileTop}><Image source={{ uri: avatarProxy(profile.avatarUrl) }} style={styles.avatar} contentFit="cover" /><View style={styles.profileCopy}><View style={styles.statusLine}><View style={[styles.statusDot, !isNativeSignedIn && styles.publicDot]} /><Text style={styles.statusText}>{isNativeSignedIn ? "已登录" : "已关联公开资料"}</Text></View><Text style={styles.nickname}>{profile.nickname}</Text><Text style={styles.profileMeta}>Wallify 用户 ID · {profile.profileId}</Text></View></View><View style={styles.profileStats}><Stat value={profile.uploadCount} label="公开上传" /><Stat value={profile.followingCount} label="关注" /></View><View style={styles.signature}><IconSymbol name="quote.opening" size={15} color="#A777FF" /><Text style={styles.signatureText}>{profile.signature ?? "暂未填写公开个人签名"}</Text></View><Pressable onPress={onUpload} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><IconSymbol name="square.and.arrow.up" size={18} color="#FFFFFF" /><Text style={styles.primaryText}>{isNativeSignedIn ? "上传壁纸" : "登录后上传壁纸"}</Text></Pressable><View style={styles.actions}><Pressable onPress={onRefresh} disabled={isRefreshing} style={styles.secondaryButton}>{isRefreshing ? <ActivityIndicator color="#DAD9E5" /> : <Text style={styles.secondaryText}>刷新资料</Text>}</Pressable><Pressable onPress={isNativeSignedIn ? onSignOut : onUnlink} style={styles.textButton}><Text style={styles.textButtonLabel}>{isNativeSignedIn ? "退出登录" : "解除关联"}</Text></Pressable></View></View>; }
 function Stat({ value, label }: { value: number | null; label: string }) { return <View style={styles.stat}><Text style={styles.statValue}>{value ?? "—"}</Text><Text style={styles.statLabel}>{label}</Text></View>; }
 function InfoRow({ icon, title, copy }: { icon: "info.circle.fill" | "lock.fill"; title: string; copy: string }) { return <View style={styles.infoRow}><View style={styles.infoIcon}><IconSymbol name={icon} size={19} color="#A777FF" /></View><View style={styles.infoCopy}><Text style={styles.infoTitle}>{title}</Text><Text style={styles.infoText}>{copy}</Text></View></View>; }
 

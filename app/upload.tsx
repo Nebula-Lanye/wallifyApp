@@ -66,7 +66,7 @@ export default function UploadScreen() {
 
   const submit = async () => {
     if (!session) {
-      Alert.alert("请先原生登录", "登录 Wallify 账号后才能上传壁纸。");
+      Alert.alert("请先登录", "登录 Wallify 账号后才能上传壁纸。");
       return;
     }
     if (!asset || !title.trim() || !categoryId) {
@@ -97,8 +97,8 @@ export default function UploadScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <IconSymbol name="lock.fill" size={30} color="#A777FF" />
         <Text style={styles.emptyTitle}>请先登录 Wallify</Text>
-        <Text style={styles.emptyCopy}>原生上传会使用当前应用内的 Wallify 登录会话。</Text>
-        <Pressable onPress={() => router.replace("/settings" as never)} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryText}>前往登录</Text></Pressable>
+        <Text style={styles.emptyCopy}>上传会使用当前应用内的 Wallify 登录会话。</Text>
+        <Pressable onPress={() => router.replace({ pathname: "/login", params: { redirectTo: "/upload" } } as never)} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryText}>前往登录</Text></Pressable>
       </ScreenContainer>
     );
   }
@@ -127,4 +127,3 @@ export default function UploadScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 34 }, nav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, back: { alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 22, backgroundColor: "#171722" }, navTitle: { color: "#F6F6FB", fontSize: 17, fontWeight: "800" }, navSpacer: { width: 44 }, lead: { marginTop: 16, color: "#A6A5B5", fontSize: 13, lineHeight: 19 }, pickArea: { alignItems: "center", justifyContent: "center", minHeight: 220, marginTop: 22, overflow: "hidden", borderWidth: 1, borderStyle: "dashed", borderColor: "#5B4E8B", borderRadius: 18, backgroundColor: "#171722" }, preview: { width: "100%", height: 260 }, pickTitle: { marginTop: 12, color: "#F6F6FB", fontSize: 16, fontWeight: "800" }, pickCopy: { marginTop: 5, color: "#A6A5B5", fontSize: 12 }, changePhoto: { alignItems: "center", minHeight: 38, justifyContent: "center" }, changePhotoText: { color: "#7D9EFF", fontWeight: "800", fontSize: 13 }, label: { marginTop: 18, marginBottom: 8, color: "#DAD9E5", fontSize: 13, fontWeight: "800" }, optional: { color: "#777686", fontWeight: "500" }, input: { minHeight: 50, borderRadius: 14, backgroundColor: "#171722", color: "#F6F6FB", paddingHorizontal: 14, fontSize: 14 }, textarea: { minHeight: 92, paddingTop: 13, textAlignVertical: "top" }, categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 }, categoryButton: { width: "48%", alignItems: "center", minHeight: 43, justifyContent: "center", borderRadius: 13, backgroundColor: "#171722" }, categorySelected: { backgroundColor: "#4C83FF" }, categoryText: { color: "#C9C8D5", fontSize: 13, fontWeight: "700" }, categoryTextSelected: { color: "#FFFFFF" }, primaryButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 51, marginTop: 25, borderRadius: 15, backgroundColor: "#4C83FF" }, primaryText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" }, pressed: { opacity: 0.72, transform: [{ scale: 0.98 }] }, emptyTitle: { marginTop: 13, color: "#F6F6FB", fontSize: 20, fontWeight: "800" }, emptyCopy: { marginTop: 6, color: "#A6A5B5", fontSize: 13, textAlign: "center", lineHeight: 19 }, sheetBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.62)" }, sheet: { height: "72%", borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: "#171722", paddingTop: 10 }, sheetHandle: { alignSelf: "center", width: 38, height: 4, borderRadius: 3, backgroundColor: "#555466" }, sheetTitle: { marginTop: 18, marginHorizontal: 16, color: "#F6F6FB", fontSize: 19, fontWeight: "800" }, assetGrid: { padding: 8, gap: 6 }, assetTile: { width: "33.333%", aspectRatio: 1, padding: 3 }, assetImage: { flex: 1, borderRadius: 8, backgroundColor: "#292838" },
 });
-

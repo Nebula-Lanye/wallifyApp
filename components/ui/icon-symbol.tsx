@@ -34,6 +34,7 @@ const MAPPING = {
   "square.and.arrow.up": "ios-share",
   "quote.opening": "format-quote",
   "photo.on.rectangle": "photo-library",
+  "plus": "add",
 } as IconMapping;
 
 export function IconSymbol({
