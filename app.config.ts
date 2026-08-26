@@ -112,6 +112,14 @@ const config: ExpoConfig = {
       },
     ],
     [
+      "expo-media-library",
+      {
+        photosPermission: "Allow $(PRODUCT_NAME) to access your photos.",
+        savePhotosPermission: "Allow $(PRODUCT_NAME) to save wallpapers to your photo library.",
+        granularPermissions: ["photo"],
+      },
+    ],
+    [
       "expo-build-properties",
       {
         android: {

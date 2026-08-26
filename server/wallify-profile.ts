@@ -5,6 +5,9 @@ export type WallifyProfile = {
   nickname: string;
   avatarUrl: string;
   profileUrl: string;
+  signature: string | null;
+  uploadCount: number | null;
+  followingCount: number | null;
 };
 
 function decodeHtml(value: string) {
@@ -15,6 +18,24 @@ function decodeHtml(value: string) {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .trim();
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractStatistic(html: string, label: string) {
+  const text = decodeHtml(html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
+  const match = text.match(new RegExp(`(\\d+)\\s*${escapeRegExp(label)}`, "i"));
+  return match?.[1] ? Number(match[1]) : null;
+}
+
+function extractSignature(html: string) {
+  const classMatch = html.match(/class=["'][^"']*(?:profile-bio|profile-signature|user-bio|user-signature)[^"']*["'][^>]*>([\s\S]*?)<\//i);
+  const fallbackMatch = html.match(/<h1[^>]*>[\s\S]*?<\/h1>\s*<p[^>]*>([\s\S]*?)<\/p>/i);
+  const raw = classMatch?.[1] ?? fallbackMatch?.[1] ?? "";
+  const signature = decodeHtml(raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
+  return signature || null;
 }
 
 export function parseWallifyProfile(html: string, profileId: number): WallifyProfile | null {
@@ -29,6 +50,9 @@ export function parseWallifyProfile(html: string, profileId: number): WallifyPro
     nickname,
     avatarUrl: `${WALLIFY_ORIGIN}/UserAvatar/${profileId}/avatar.jpg`,
     profileUrl: `${WALLIFY_ORIGIN}/pages/profile.php?id=${profileId}`,
+    signature: extractSignature(html),
+    uploadCount: extractStatistic(html, "上传"),
+    followingCount: extractStatistic(html, "关注"),
   };
 }
 
@@ -50,4 +74,3 @@ export async function fetchWallifyProfile(profileId: number): Promise<WallifyPro
 
   return profile;
 }
-

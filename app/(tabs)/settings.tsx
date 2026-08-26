@@ -101,7 +101,7 @@ export default function SettingsScreen() {
         {isLoading ? (
           <View style={styles.accountLoading}><ActivityIndicator color="#7D9EFF" /></View>
         ) : profile ? (
-          <LinkedAccountCard profile={profile} isRefreshing={resolveProfile.isPending} onOpen={() => void openUrl(profile.profileUrl)} onRefresh={() => void handleRefreshProfile()} onUnlink={unlinkProfile} />
+          <LinkedAccountCard profile={profile} isRefreshing={resolveProfile.isPending} onOpen={() => void openUrl(profile.profileUrl)} onRefresh={() => void handleRefreshProfile()} onUpload={() => void openUrl(`${siteUrl}/pages/upload.php`)} onUnlink={unlinkProfile} />
         ) : (
           <UnlinkedAccountCard onLogin={() => void openUrl(`${siteUrl}/pages/login.php`)} onRegister={() => void openUrl(`${siteUrl}/pages/register.php`)} onLink={() => setIsLinkSheetVisible(true)} />
         )}
@@ -164,7 +164,7 @@ function UnlinkedAccountCard({ onLogin, onRegister, onLink }: { onLogin: () => v
   );
 }
 
-function LinkedAccountCard({ profile, isRefreshing, onOpen, onRefresh, onUnlink }: { profile: LinkedWallifyProfile; isRefreshing: boolean; onOpen: () => void; onRefresh: () => void; onUnlink: () => void }) {
+function LinkedAccountCard({ profile, isRefreshing, onOpen, onRefresh, onUpload, onUnlink }: { profile: LinkedWallifyProfile; isRefreshing: boolean; onOpen: () => void; onRefresh: () => void; onUpload: () => void; onUnlink: () => void }) {
   return (
     <View style={styles.accountCard}>
       <Pressable onPress={onOpen} style={({ pressed }) => [styles.profileTop, pressed && styles.rowPressed]}>
@@ -176,10 +176,31 @@ function LinkedAccountCard({ profile, isRefreshing, onOpen, onRefresh, onUnlink 
         </View>
         <IconSymbol name="chevron.right" size={18} color="#A6A5B5" />
       </Pressable>
+      <View style={styles.profileStats}>
+        <ProfileStat value={profile.uploadCount} label="公开上传" />
+        <ProfileStat value={profile.followingCount} label="关注" />
+      </View>
+      <View style={styles.signatureBox}>
+        <IconSymbol name="quote.opening" size={15} color="#A777FF" />
+        <Text style={styles.signatureText} numberOfLines={2}>{profile.signature ?? "暂未填写公开个人签名"}</Text>
+      </View>
+      <Pressable onPress={onUpload} style={({ pressed }) => [styles.uploadButton, pressed && styles.primaryPressed]}>
+        <IconSymbol name="square.and.arrow.up" size={18} color="#FFFFFF" />
+        <Text style={styles.primaryText}>上传壁纸</Text>
+      </Pressable>
       <View style={styles.accountActions}>
         <Pressable onPress={onRefresh} disabled={isRefreshing} style={({ pressed }) => [styles.secondaryButton, (pressed || isRefreshing) && styles.rowPressed]}>{isRefreshing ? <ActivityIndicator size="small" color="#DAD9E5" /> : <Text style={styles.secondaryText}>刷新资料</Text>}</Pressable>
         <Pressable onPress={onUnlink} style={({ pressed }) => [styles.linkButton, pressed && styles.rowPressed]}><Text style={styles.linkText}>解除关联</Text></Pressable>
       </View>
+    </View>
+  );
+}
+
+function ProfileStat({ value, label }: { value: number | null; label: string }) {
+  return (
+    <View style={styles.statItem}>
+      <Text style={styles.statValue}>{value === null ? "—" : value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -205,6 +226,13 @@ const styles = StyleSheet.create({
   nickname: { marginTop: 4, color: "#F6F6FB", fontSize: 18, lineHeight: 24, fontWeight: "800" },
   profileMeta: { marginTop: 2, color: "#A6A5B5", fontSize: 12, lineHeight: 17 },
   accountActions: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 15 },
+  profileStats: { flexDirection: "row", marginTop: 17, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: "#292838", paddingVertical: 12 },
+  statItem: { flex: 1, alignItems: "center" },
+  statValue: { color: "#F6F6FB", fontSize: 17, lineHeight: 22, fontWeight: "800" },
+  statLabel: { marginTop: 3, color: "#A6A5B5", fontSize: 11, lineHeight: 15 },
+  signatureBox: { flexDirection: "row", alignItems: "flex-start", gap: 7, marginTop: 13, paddingHorizontal: 2 },
+  signatureText: { flex: 1, color: "#C9C8D5", fontSize: 12, lineHeight: 18 },
+  uploadButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 45, marginTop: 14, borderRadius: 13, backgroundColor: "#4C83FF" },
   primaryButton: { alignItems: "center", justifyContent: "center", minHeight: 47, marginTop: 16, borderRadius: 14, backgroundColor: "#4C83FF", paddingHorizontal: 16 },
   primaryPressed: { opacity: 0.72, transform: [{ scale: 0.98 }] },
   primaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },

@@ -14,6 +14,7 @@ const MAPPING = {
   "chevron.left": "chevron-left",
   "arrow.right": "arrow-forward",
   "arrow.up.right": "north-east",
+  "arrow.down.to.line": "file-download",
   "sparkles": "auto-awesome",
   "magnifyingglass": "search",
   "heart": "favorite-border",
@@ -31,6 +32,7 @@ const MAPPING = {
   "info.circle.fill": "info",
   "lock.fill": "lock",
   "square.and.arrow.up": "ios-share",
+  "quote.opening": "format-quote",
 } as IconMapping;
 
 export function IconSymbol({

@@ -1,4 +1,6 @@
 import * as Haptics from "expo-haptics";
+import * as FileSystem from "expo-file-system/legacy";
+import * as MediaLibrary from "expo-media-library";
 import * as WebBrowser from "expo-web-browser";
 import { Image } from "expo-image";
 import { Stack, router, useLocalSearchParams } from "expo-router";
@@ -57,11 +59,35 @@ export default function WallpaperDetailScreen() {
     });
   };
 
+  const saveWallpaper = async () => {
+    if (Platform.OS === "web") {
+      await WebBrowser.openBrowserAsync(wallpaper.fullImageUrl);
+      return;
+    }
+
+    try {
+      const permission = await MediaLibrary.requestPermissionsAsync(true, ["photo"]);
+      if (!permission.granted) {
+        Alert.alert("需要相册权限", "允许后才能将壁纸保存到设备相册。");
+        return;
+      }
+
+      const extension = wallpaper.fullImageUrl.split(".").pop()?.split("?")[0] || "jpg";
+      const localUri = `${FileSystem.cacheDirectory}wallify-${wallpaper.id}.${extension}`;
+      const downloaded = await FileSystem.downloadAsync(wallpaper.fullImageUrl, localUri);
+      await MediaLibrary.saveToLibraryAsync(downloaded.uri);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("已保存到相册", "壁纸原图已保存到你的设备相册。");
+    } catch {
+      Alert.alert("保存失败", "暂时无法下载这张壁纸，请稍后再试。");
+    }
+  };
+
   return (
     <ScreenContainer edges={["top", "bottom", "left", "right"]}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.mediaArea}>
-        <Image source={{ uri: wallpaper.imageUrl }} style={styles.image} contentFit="cover" transition={180} accessibilityLabel={wallpaper.title} />
+        <Image source={{ uri: wallpaper.fullImageUrl }} style={styles.image} contentFit="cover" transition={180} accessibilityLabel={wallpaper.title} />
         <View style={styles.imageShade} />
         <View style={styles.topActions}>
           <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.roundButton, pressed && styles.roundPressed]} accessibilityLabel="返回">
@@ -81,10 +107,14 @@ export default function WallpaperDetailScreen() {
         <View style={styles.pill}><Text style={styles.pillText}>{category?.title ?? "Wallify"}</Text></View>
         <Text style={styles.title}>{wallpaper.title}</Text>
         <Text style={styles.byline}>发布者 · {wallpaper.author}</Text>
-        <Text style={styles.description}>该预览来自 Wallify 壁纸站。打开原站可查看完整内容并使用社区功能。</Text>
-        <Pressable onPress={openSource} style={({ pressed }) => [styles.sourceButton, pressed && styles.primaryPressed]}>
-          <Text style={styles.sourceText}>在 Wallify 中打开</Text>
-          <IconSymbol name="arrow.up.right" size={18} color="#FFFFFF" />
+        <Text style={styles.description}>正在展示 Wallify 的原图预览。可直接保存至相册，或打开原站进行社区互动。</Text>
+        <Pressable onPress={() => void saveWallpaper()} style={({ pressed }) => [styles.sourceButton, pressed && styles.primaryPressed]}>
+          <IconSymbol name="arrow.down.to.line" size={19} color="#FFFFFF" />
+          <Text style={styles.sourceText}>{Platform.OS === "web" ? "打开原图下载" : "保存原图到相册"}</Text>
+        </Pressable>
+        <Pressable onPress={openSource} style={({ pressed }) => [styles.sourceLink, pressed && styles.primaryPressed]}>
+          <Text style={styles.sourceLinkText}>在 Wallify 中打开详情</Text>
+          <IconSymbol name="arrow.up.right" size={17} color="#7D9EFF" />
         </Pressable>
       </View>
     </ScreenContainer>
@@ -111,5 +141,6 @@ const styles = StyleSheet.create({
   primaryPressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
   primaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   sourceText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
+  sourceLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 38, marginTop: 7 },
+  sourceLinkText: { color: "#7D9EFF", fontSize: 13, fontWeight: "800" },
 });
-

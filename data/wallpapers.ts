@@ -13,6 +13,7 @@ export type Wallpaper = {
   title: string;
   category: Exclude<GameSlug, "random">;
   imageUrl: string;
+  fullImageUrl: string;
   sourceUrl: string;
   author: string;
   featured?: boolean;
@@ -33,6 +34,7 @@ export const wallpapers: Wallpaper[] = [
     title: "遐蝶：雨夜霓虹",
     category: "starrail",
     imageUrl: `${siteUrl}/uploads/wallpapers/thumbs/wp_6a886be625b882.64680580.jpg`,
+    fullImageUrl: `${siteUrl}/uploads/wallpapers/wp_6a886be625b882.64680580.jpg`,
     sourceUrl: `${siteUrl}/pages/wallpaper.php?id=34`,
     author: "admin",
     featured: true,
@@ -42,6 +44,7 @@ export const wallpapers: Wallpaper[] = [
     title: "芙宁娜",
     category: "genshin",
     imageUrl: `${siteUrl}/uploads/wallpapers/thumbs/wp_6a843d296d0651.72833260.jpg`,
+    fullImageUrl: `${siteUrl}/uploads/wallpapers/wp_6a843d296d0651.72833260.jpg`,
     sourceUrl: `${siteUrl}/pages/wallpaper.php?id=33`,
     author: "admin",
   },
@@ -50,6 +53,7 @@ export const wallpapers: Wallpaper[] = [
     title: "哥伦比娅",
     category: "genshin",
     imageUrl: `${siteUrl}/uploads/wallpapers/thumbs/wp_6a82e31f0faa67.50498496.jpg`,
+    fullImageUrl: `${siteUrl}/uploads/wallpapers/wp_6a82e31f0faa67.50498496.jpg`,
     sourceUrl: `${siteUrl}/pages/wallpaper.php?id=32`,
     author: "admin",
   },
@@ -58,6 +62,7 @@ export const wallpapers: Wallpaper[] = [
     title: "遐蝶",
     category: "starrail",
     imageUrl: `${siteUrl}/uploads/wallpapers/thumbs/wp_6a76acd7d085b3.60065831.webp`,
+    fullImageUrl: `${siteUrl}/uploads/wallpapers/wp_6a76acd7d085b3.60065831.webp`,
     sourceUrl: `${siteUrl}/pages/wallpaper.php?id=29`,
     author: "admin",
   },
@@ -66,6 +71,7 @@ export const wallpapers: Wallpaper[] = [
     title: "原神7.0版本前瞻特别节目封面",
     category: "genshin",
     imageUrl: `${siteUrl}/uploads/wallpapers/thumbs/wp_6a70aa0d17bb43.83235140.jpg`,
+    fullImageUrl: `${siteUrl}/uploads/wallpapers/wp_6a70aa0d17bb43.83235140.jpg`,
     sourceUrl: `${siteUrl}/pages/wallpaper.php?id=28`,
     author: "admin",
   },
@@ -74,6 +80,7 @@ export const wallpapers: Wallpaper[] = [
     title: "木偶",
     category: "genshin",
     imageUrl: `${siteUrl}/uploads/wallpapers/thumbs/wp_6a6fe5b17e60d0.95537778.jpg`,
+    fullImageUrl: `${siteUrl}/uploads/wallpapers/wp_6a6fe5b17e60d0.95537778.jpg`,
     sourceUrl: `${siteUrl}/pages/wallpaper.php?id=1`,
     author: "admin",
   },
@@ -87,4 +94,3 @@ export function getWallpaper(id: string | string[] | undefined) {
   const wallpaperId = Array.isArray(id) ? id[0] : id;
   return wallpapers.find((wallpaper) => wallpaper.id === wallpaperId);
 }
-

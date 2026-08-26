@@ -6,6 +6,9 @@ export type LinkedWallifyProfile = {
   nickname: string;
   avatarUrl: string;
   profileUrl: string;
+  signature: string | null;
+  uploadCount: number | null;
+  followingCount: number | null;
 };
 
 const LINKED_PROFILE_KEY = "wallify.linked-public-profile";
@@ -44,4 +47,3 @@ export function useWallifyProfile() {
 
   return { profile, isLoading, saveProfile, clearProfile };
 }
-

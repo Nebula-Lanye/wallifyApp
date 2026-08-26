@@ -13,6 +13,7 @@ describe("Wallify wallpaper data", () => {
     expect(wallpaper?.title).toBe("遐蝶：雨夜霓虹");
     expect(wallpaper?.sourceUrl).toBe(`${siteUrl}/pages/wallpaper.php?id=34`);
     expect(wallpaper?.imageUrl.startsWith(siteUrl)).toBe(true);
+    expect(wallpaper?.fullImageUrl).toBe(`${siteUrl}/uploads/wallpapers/wp_6a886be625b882.64680580.jpg`);
   });
 
   it("maps every wallpaper to a known category", () => {
