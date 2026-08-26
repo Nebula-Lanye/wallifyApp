@@ -36,6 +36,7 @@ const MAPPING = {
   "photo.on.rectangle": "photo-library",
   "plus": "add",
   "doc.text": "description",
+  "checkmark.circle.fill": "check-circle",
 } as IconMapping;
 
 export function IconSymbol({
