@@ -27,6 +27,7 @@ const MAPPING = {
   "safari.fill": "language",
   "person.crop.circle.fill": "account-circle",
   "person.badge.plus": "person-add",
+  "arrow.clockwise": "refresh",
   "info.circle.fill": "info",
   "lock.fill": "lock",
   "square.and.arrow.up": "ios-share",
