@@ -1,11 +1,14 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
+import Animated, { Easing, ReduceMotion, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
@@ -24,6 +27,7 @@ SplashScreen.setOptions({
   duration: 300,
   fade: true,
 });
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -38,6 +42,11 @@ export default function RootLayout() {
 
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
   const [frame, setFrame] = useState<Rect>(initialFrame);
+  const [isLaunchVisible, setIsLaunchVisible] = useState(true);
+
+  useEffect(() => {
+    void SplashScreen.hideAsync();
+  }, []);
 
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
@@ -98,7 +107,7 @@ export default function RootLayout() {
             <Stack.Screen name="terms" options={{ presentation: "card" }} />
             <Stack.Screen name="oauth/callback" />
           </Stack>
-          <StatusBar style="auto" />
+          <StatusBar style="light" />
         </QueryClientProvider>
       </trpc.Provider>
     </GestureHandlerRootView>
@@ -109,11 +118,11 @@ export default function RootLayout() {
   if (shouldOverrideSafeArea) {
     return (
       <ThemeProvider>
-        <SafeAreaProvider initialMetrics={providerInitialMetrics}>
-          <SafeAreaFrameContext.Provider value={frame}>
-            <SafeAreaInsetsContext.Provider value={insets}>
-              {content}
-            </SafeAreaInsetsContext.Provider>
+          <SafeAreaProvider initialMetrics={providerInitialMetrics}>
+            <SafeAreaFrameContext.Provider value={frame}>
+              <SafeAreaInsetsContext.Provider value={insets}>
+                <View style={styles.root}>{content}{isLaunchVisible ? <LaunchOverlay onFinish={() => setIsLaunchVisible(false)} /> : null}</View>
+              </SafeAreaInsetsContext.Provider>
           </SafeAreaFrameContext.Provider>
         </SafeAreaProvider>
       </ThemeProvider>
@@ -122,7 +131,27 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={providerInitialMetrics}><View style={styles.root}>{content}{isLaunchVisible ? <LaunchOverlay onFinish={() => setIsLaunchVisible(false)} /> : null}</View></SafeAreaProvider>
     </ThemeProvider>
   );
 }
+
+function LaunchOverlay({ onFinish }: { onFinish: () => void }) {
+  const progress = useSharedValue(1);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      progress.value = withTiming(0, { duration: 300, easing: Easing.bezier(0.22, 0.61, 0.36, 1), reduceMotion: ReduceMotion.System }, (finished) => {
+        if (finished) runOnJS(onFinish)();
+      });
+    }, 720);
+    return () => clearTimeout(timer);
+  }, [onFinish, progress]);
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
+  return <Animated.View pointerEvents="none" style={[styles.launchOverlay, animatedStyle]}><Image source={require("../assets/images/wallify-launch-lower-third.png")} style={styles.launchImage} contentFit="cover" /></Animated.View>;
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  launchOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100, backgroundColor: "#3C3C3B" },
+  launchImage: { flex: 1, width: "100%", height: "100%" },
+});

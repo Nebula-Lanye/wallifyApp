@@ -52,6 +52,6 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   uploadTab: { flex: 1, alignItems: "center", justifyContent: "flex-start", paddingTop: 0 },
   uploadPressed: { opacity: 0.8, transform: [{ scale: 0.97 }] },
-  uploadCircle: { alignItems: "center", justifyContent: "center", width: 52, height: 52, marginTop: -21, borderWidth: 4, borderColor: "#0B0B12", borderRadius: 26, backgroundColor: "#FF6B2C" },
+  uploadCircle: { alignItems: "center", justifyContent: "center", width: 52, height: 52, marginTop: -21, borderWidth: 4, borderColor: "#0B0B12", borderRadius: 26, backgroundColor: "#0D6EFD" },
   uploadLabel: { marginTop: 2, color: "#DAD9E5", fontSize: 11, fontWeight: "700" },
 });
