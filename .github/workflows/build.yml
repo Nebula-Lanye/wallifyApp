@@ -47,26 +47,19 @@ jobs:
       - name: Install EAS CLI
         run: npm install --global eas-cli
 
-      - name: Create ephemeral Android signing key
+      - name: Restore Android signing key
         run: |
           mkdir -p .eas artifacts
-          keytool -genkeypair -v \
-            -keystore .eas/wallify-release.jks \
-            -storepass android \
-            -keypass android \
-            -alias wallify \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Wallify, OU=Mobile, O=Wallify, L=Internet, ST=Internet, C=US"
+          printf '%s' "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > .eas/wallify-release.jks
+          chmod 600 .eas/wallify-release.jks
           cat > credentials.json <<'EOF'
           {
             "android": {
               "keystore": {
                 "keystorePath": ".eas/wallify-release.jks",
-                "keystorePassword": "android",
-                "keyAlias": "wallify",
-                "keyPassword": "android"
+                "keystorePassword": "${{ secrets.KEYSTORE_PASSWORD }}",
+                "keyAlias": "${{ secrets.KEY_ALIAS }}",
+                "keyPassword": "${{ secrets.KEY_PASSWORD }}"
               }
             }
           }
