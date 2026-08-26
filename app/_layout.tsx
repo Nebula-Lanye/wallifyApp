@@ -94,6 +94,8 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="login" options={{ presentation: "card" }} />
+            <Stack.Screen name="profile-edit" options={{ presentation: "card" }} />
+            <Stack.Screen name="terms" options={{ presentation: "card" }} />
             <Stack.Screen name="oauth/callback" />
           </Stack>
           <StatusBar style="auto" />

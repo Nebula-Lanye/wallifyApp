@@ -140,6 +140,82 @@ export function signOutWallify(sessionId: string) {
   return { success: true } as const;
 }
 
+export type WallifyAccountSettings = {
+  username: string;
+  email: string;
+  bio: string;
+};
+
+export type WallifyTermsSection = {
+  title: string;
+  paragraphs: string[];
+  bullets: string[];
+};
+
+function extractNamedInputValue(html: string, name: string) {
+  const tagMatch = html.match(new RegExp(`<input[^>]+name=["']${name}["'][^>]*>`, "i"))?.[0] ?? "";
+  return decodeHtml(tagMatch.match(/value=["']([^"']*)["']/i)?.[1] ?? "");
+}
+
+export function parseWallifyAccountSettings(html: string): WallifyAccountSettings | null {
+  const username = extractNamedInputValue(html, "username");
+  const email = extractNamedInputValue(html, "email");
+  const bio = decodeHtml(html.match(/<textarea[^>]+name=["']bio["'][^>]*>([\s\S]*?)<\/textarea>/i)?.[1] ?? "");
+  if (!username || !email) return null;
+  return { username, email, bio };
+}
+
+export function parseWallifyTerms(html: string): WallifyTermsSection[] {
+  const sections: WallifyTermsSection[] = [];
+  const mainContent = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? html;
+  const matches = mainContent.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>([\s\S]*?)(?=<h2[^>]*>|$)/gi);
+  for (const match of matches) {
+    const title = cleanText(match[1] ?? "");
+    const body = match[2] ?? "";
+    if (!title) continue;
+    const paragraphs = [...body.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)].map((item) => cleanText(item[1] ?? "")).filter(Boolean);
+    const bullets = [...body.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)].map((item) => cleanText(item[1] ?? "")).filter(Boolean);
+    sections.push({ title, paragraphs, bullets });
+  }
+  return sections;
+}
+
+async function getSettingsPage(session: RemoteSession) {
+  const page = await originFetch("/pages/settings.php", {}, session.cookie);
+  if (!page.ok) throw new Error("无法读取账户设置，请重新登录后再试");
+  const nextCookie = setCookieHeader(page);
+  if (nextCookie) session.cookie = mergeCookie(session.cookie, nextCookie);
+  session.expiresAt = Date.now() + SESSION_TTL_MS;
+  return page.body;
+}
+
+export async function getWallifyAccountSettings(sessionId: string) {
+  const session = requireSession(sessionId);
+  const settings = parseWallifyAccountSettings(await getSettingsPage(session));
+  if (!settings) throw new Error("无法读取当前账户资料");
+  return settings;
+}
+
+export async function updateWallifyProfile(input: { sessionId: string; username: string; email: string; bio: string }) {
+  const session = requireSession(input.sessionId);
+  const body = new URLSearchParams({ username: input.username, email: input.email, bio: input.bio });
+  const response = await originFetch("/api/auth.php?action=update_profile", { method: "POST", body }, session.cookie);
+  const result = readJson<{ success?: boolean; message?: string }>(response);
+  if (!response.ok || !result?.success) throw new Error(result?.message || "资料保存失败");
+  const profile = await fetchWallifyProfile(session.profile.profileId);
+  session.profile = profile;
+  session.expiresAt = Date.now() + SESSION_TTL_MS;
+  return profile;
+}
+
+export async function fetchWallifyTerms() {
+  const response = await originFetch("/pages/terms.php");
+  if (!response.ok) throw new Error("暂时无法读取用户协议");
+  const sections = parseWallifyTerms(response.body);
+  if (!sections.length) throw new Error("用户协议内容暂不可用");
+  return { title: "使用条款", sections };
+}
+
 export type WallifyWallpaper = {
   id: string;
   title: string;

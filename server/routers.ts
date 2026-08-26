@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { fetchCategoryWallpapers, fetchLatestWallpapers, fetchRandomWallpaper, fetchWallpaper, fetchWallpaperImageMetadata, getSessionProfile, signInWallify, signOutWallify, uploadWallpaper } from "./wallify-client";
+import { fetchCategoryWallpapers, fetchLatestWallpapers, fetchRandomWallpaper, fetchWallpaper, fetchWallpaperImageMetadata, fetchWallifyTerms, getSessionProfile, getWallifyAccountSettings, signInWallify, signOutWallify, updateWallifyProfile, uploadWallpaper } from "./wallify-client";
 import { fetchWallifyProfile } from "./wallify-profile";
 
 export const appRouter = router({
@@ -47,6 +47,18 @@ export const appRouter = router({
     sessionProfile: publicProcedure
       .input(z.object({ sessionId: z.string().uuid() }))
       .query(({ input }) => getSessionProfile(input.sessionId)),
+    accountSettings: publicProcedure
+      .input(z.object({ sessionId: z.string().uuid() }))
+      .query(({ input }) => getWallifyAccountSettings(input.sessionId)),
+    updateProfile: publicProcedure
+      .input(z.object({
+        sessionId: z.string().uuid(),
+        username: z.string().trim().min(2).max(40),
+        email: z.string().trim().email().max(320),
+        bio: z.string().trim().max(500),
+      }))
+      .mutation(({ input }) => updateWallifyProfile(input)),
+    terms: publicProcedure.query(() => fetchWallifyTerms()),
     logout: publicProcedure
       .input(z.object({ sessionId: z.string().uuid() }))
       .mutation(({ input }) => signOutWallify(input.sessionId)),

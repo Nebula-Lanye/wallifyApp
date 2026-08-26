@@ -35,6 +35,7 @@ const MAPPING = {
   "quote.opening": "format-quote",
   "photo.on.rectangle": "photo-library",
   "plus": "add",
+  "doc.text": "description",
 } as IconMapping;
 
 export function IconSymbol({
