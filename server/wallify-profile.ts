@@ -1,3 +1,5 @@
+import axios from "axios";
+
 const WALLIFY_ORIGIN = "https://lkr2312.dpdns.org";
 
 export type WallifyProfile = {
@@ -58,16 +60,19 @@ export function parseWallifyProfile(html: string, profileId: number): WallifyPro
 
 export async function fetchWallifyProfile(profileId: number): Promise<WallifyProfile> {
   const profileUrl = `${WALLIFY_ORIGIN}/pages/profile.php?id=${profileId}`;
-  const response = await fetch(profileUrl, {
+  const response = await axios.get<string>(profileUrl, {
     headers: { "User-Agent": "Wallify-Mobile/1.0" },
-    signal: AbortSignal.timeout(8000),
+    timeout: 10_000,
+    responseType: "text",
+    transformResponse: [(data) => data],
+    validateStatus: () => true,
   });
 
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
     throw new Error("无法读取该 Wallify 公开资料");
   }
 
-  const profile = parseWallifyProfile(await response.text(), profileId);
+  const profile = parseWallifyProfile(response.data, profileId);
   if (!profile) {
     throw new Error("未找到该用户的公开资料");
   }

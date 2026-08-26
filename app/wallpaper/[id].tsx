@@ -1,20 +1,38 @@
 import * as Haptics from "expo-haptics";
 import * as FileSystem from "expo-file-system/legacy";
 import * as MediaLibrary from "expo-media-library";
-import * as WebBrowser from "expo-web-browser";
 import { Image } from "expo-image";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { wallifyImageUrl } from "@/data/wallify-image";
 import { getCategory, getWallpaper } from "@/data/wallpapers";
 import { useFavorites } from "@/hooks/use-favorites";
+import { trpc } from "@/lib/trpc";
 
 export default function WallpaperDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const wallpaper = getWallpaper(id);
+  const wallpaperId = Array.isArray(id) ? id[0] : id;
+  const remoteDetail = trpc.wallify.detail.useQuery({ id: wallpaperId ?? "0" }, { enabled: Boolean(wallpaperId) });
+  const remoteWallpaper = remoteDetail.data ? {
+    ...remoteDetail.data,
+    imageUrl: wallifyImageUrl(remoteDetail.data.thumbnailPath),
+    fullImageUrl: wallifyImageUrl(remoteDetail.data.fullImagePath),
+    sourceUrl: "",
+  } : null;
+  const wallpaper = remoteWallpaper ?? getWallpaper(id);
   const { isFavorite, toggleFavorite } = useFavorites();
+
+  if (remoteDetail.isLoading && !wallpaper) {
+    return (
+      <ScreenContainer className="items-center justify-center">
+        <Stack.Screen options={{ headerShown: false }} />
+        <Text style={styles.loadingText}>正在加载原图…</Text>
+      </ScreenContainer>
+    );
+  }
 
   if (!wallpaper) {
     return (
@@ -51,17 +69,9 @@ export default function WallpaperDetailScreen() {
     }
   };
 
-  const openSource = () => {
-    void WebBrowser.openBrowserAsync(wallpaper.sourceUrl, {
-      toolbarColor: "#171722",
-      controlsColor: "#7D9EFF",
-      enableDefaultShareMenuItem: true,
-    });
-  };
-
   const saveWallpaper = async () => {
     if (Platform.OS === "web") {
-      await WebBrowser.openBrowserAsync(wallpaper.fullImageUrl);
+      Alert.alert("请在移动设备中保存", "原图保存功能会在 iOS 或 Android 中直接写入系统相册。");
       return;
     }
 
@@ -107,14 +117,10 @@ export default function WallpaperDetailScreen() {
         <View style={styles.pill}><Text style={styles.pillText}>{category?.title ?? "Wallify"}</Text></View>
         <Text style={styles.title}>{wallpaper.title}</Text>
         <Text style={styles.byline}>发布者 · {wallpaper.author}</Text>
-        <Text style={styles.description}>正在展示 Wallify 的原图预览。可直接保存至相册，或打开原站进行社区互动。</Text>
+        <Text style={styles.description}>正在展示 Wallify 的原图预览。可直接保存至相册，并在应用内完成收藏与分享。</Text>
         <Pressable onPress={() => void saveWallpaper()} style={({ pressed }) => [styles.sourceButton, pressed && styles.primaryPressed]}>
           <IconSymbol name="arrow.down.to.line" size={19} color="#FFFFFF" />
-          <Text style={styles.sourceText}>{Platform.OS === "web" ? "打开原图下载" : "保存原图到相册"}</Text>
-        </Pressable>
-        <Pressable onPress={openSource} style={({ pressed }) => [styles.sourceLink, pressed && styles.primaryPressed]}>
-          <Text style={styles.sourceLinkText}>在 Wallify 中打开详情</Text>
-          <IconSymbol name="arrow.up.right" size={17} color="#7D9EFF" />
+          <Text style={styles.sourceText}>保存原图到相册</Text>
         </Pressable>
       </View>
     </ScreenContainer>
@@ -141,6 +147,5 @@ const styles = StyleSheet.create({
   primaryPressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
   primaryText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   sourceText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
-  sourceLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 38, marginTop: 7 },
-  sourceLinkText: { color: "#7D9EFF", fontSize: 13, fontWeight: "800" },
+  loadingText: { color: "#A6A5B5", fontSize: 14 },
 });

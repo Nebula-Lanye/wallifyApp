@@ -33,6 +33,7 @@ const MAPPING = {
   "lock.fill": "lock",
   "square.and.arrow.up": "ios-share",
   "quote.opening": "format-quote",
+  "photo.on.rectangle": "photo-library",
 } as IconMapping;
 
 export function IconSymbol({

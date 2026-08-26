@@ -9,3 +9,11 @@
 经用户确认并使用其管理员账户登录后，网站首页显示已登录的 `admin` 资料和 `/pages/upload.php` 上传入口。移动端应通过应用内浏览器打开该入口，沿用原站登录会话与权限判断；不得在移动端代码、日志或配置中写入管理员密码。
 
 管理员上传页需要图片文件、标题、游戏分类，并可选填写描述和标签；支持 JPG、PNG、GIF、WebP，单个文件最大 10MB。壁纸详情页直接公开提供原图 URL（例如 `/uploads/wallpapers/wp_6a886be625b882.64680580.jpg`）及“下载”入口，因此移动端可以使用该原图 URL 进行全屏预览与保存到系统相册；上传仍通过原站页面处理。
+
+登录页的 `#loginForm` 包含 `csrf_token`、`action=login`、`account`、`username` 与 `password` 字段，并由页面脚本异步提交。任何原生登录实现都必须通过服务端安全代理保管短期站点会话，且不得将密码写入客户端持久化存储或应用日志。
+
+经用户再次确认登录后，站点首页会返回上传入口和公开壁纸卡片；每张卡片链接到 `pages/wallpaper.php?id={id}`，并提供缩略图、标题、游戏分类、上传者和公开互动计数。原生列表服务可从这些公开字段开始解析，避免维护静态壁纸清单。
+
+上传页使用 `/api/upload_chunk.php` 进行分片上传。每个分片通过 `FormData` 提交；合并请求包含 `action=merge`、`upload_id`、`total`、`file_name`、`file_type`、`file_size`、`csrf_token`、`title`、`description`、`category_id` 与 `tags`。原生上传应由服务端代理维护站点 Cookie 与 CSRF 值，并只在用户主动提交后执行。
+
+单个分片的额外字段为 `action=chunk`、`upload_id`、`index`、`total` 和 `chunk` 二进制文件。已登录会话访问注册页会回到首页，因此原生应用应以登录后的资料页和上传界面为账户主路径，而不是依赖网页注册跳转。
