@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import axios from "axios";
+import { imageSize } from "image-size";
 
 import type { WallifyProfile } from "./wallify-profile";
 import { fetchWallifyProfile } from "./wallify-profile";
@@ -149,6 +150,12 @@ export type WallifyWallpaper = {
   featured: boolean;
 };
 
+export type WallifyImageMetadata = {
+  width: number | null;
+  height: number | null;
+  byteSize: number | null;
+};
+
 function categoryFromTitle(value: string): WallifyWallpaper["category"] {
   if (value.includes("星穹")) return "starrail";
   if (value.includes("崩坏3")) return "honkai3";
@@ -182,6 +189,26 @@ export async function fetchWallpaper(id: string) {
   const wallpaper = parseWallpaperDetail(response.body, id);
   if (!wallpaper) throw new Error("未找到这张壁纸");
   return wallpaper;
+}
+
+export async function fetchWallpaperImageMetadata(imagePath: string): Promise<WallifyImageMetadata | null> {
+  if (!/^\/uploads\/wallpapers\/[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp|gif)$/i.test(imagePath)) return null;
+  try {
+    const response = await axios.get<ArrayBuffer>(`${WALLIFY_ORIGIN}${imagePath}`, {
+      responseType: "arraybuffer",
+      timeout: 20_000,
+      headers: { "User-Agent": "Wallify-Mobile/1.0" },
+    });
+    const bytes = Buffer.from(response.data);
+    const dimensions = imageSize(bytes);
+    return {
+      width: dimensions.width ?? null,
+      height: dimensions.height ?? null,
+      byteSize: bytes.byteLength || null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function parseWallpaperCards(html: string): WallifyWallpaper[] {

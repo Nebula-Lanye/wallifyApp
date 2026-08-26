@@ -13,6 +13,12 @@ import { getCategory, getWallpaper } from "@/data/wallpapers";
 import { useFavorites } from "@/hooks/use-favorites";
 import { trpc } from "@/lib/trpc";
 
+function formatFileSize(bytes: number | null | undefined) {
+  if (!bytes || bytes <= 0) return "暂不可用";
+  if (bytes < 1024 * 1024) return `${Math.max(bytes / 1024, 0.1).toFixed(bytes < 100 * 1024 ? 1 : 0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
 export default function WallpaperDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const wallpaperId = Array.isArray(id) ? id[0] : id;
@@ -26,6 +32,7 @@ export default function WallpaperDetailScreen() {
   const wallpaper = remoteWallpaper ?? getWallpaper(id);
   const { isFavorite, toggleFavorite } = useFavorites();
   const [imageAspectRatio, setImageAspectRatio] = useState(1);
+  const imageMetadata = remoteDetail.data?.imageMetadata;
 
   if (remoteDetail.isLoading && !wallpaper) {
     return (
@@ -132,6 +139,17 @@ export default function WallpaperDetailScreen() {
           <Text style={styles.title}>{wallpaper.title}</Text>
           <Text style={styles.byline}>发布者 · {wallpaper.author}</Text>
           <Text style={styles.description}>正在展示 Wallify 的原图预览。可直接保存至相册，并在应用内完成收藏与分享。</Text>
+          <View style={styles.fileInfo}>
+            <View style={styles.fileInfoItem}>
+              <Text style={styles.fileInfoLabel}>原图分辨率</Text>
+              <Text style={styles.fileInfoValue}>{imageMetadata?.width && imageMetadata.height ? `${imageMetadata.width} × ${imageMetadata.height}` : remoteDetail.isLoading ? "正在读取…" : "暂不可用"}</Text>
+            </View>
+            <View style={styles.fileInfoDivider} />
+            <View style={styles.fileInfoItem}>
+              <Text style={styles.fileInfoLabel}>文件大小</Text>
+              <Text style={styles.fileInfoValue}>{remoteDetail.isLoading ? "正在读取…" : formatFileSize(imageMetadata?.byteSize)}</Text>
+            </View>
+          </View>
           <Pressable onPress={() => void saveWallpaper()} style={({ pressed }) => [styles.sourceButton, pressed && styles.primaryPressed]}>
             <IconSymbol name="arrow.down.to.line" size={19} color="#FFFFFF" />
             <Text style={styles.sourceText}>保存原图到相册</Text>
@@ -158,6 +176,11 @@ const styles = StyleSheet.create({
   title: { marginTop: 12, color: "#F6F6FB", fontSize: 26, lineHeight: 34, fontWeight: "800" },
   byline: { marginTop: 5, color: "#A6A5B5", fontSize: 13, lineHeight: 18 },
   description: { marginTop: 15, color: "#A6A5B5", fontSize: 13, lineHeight: 19 },
+  fileInfo: { flexDirection: "row", alignItems: "stretch", marginTop: 18, overflow: "hidden", borderRadius: 15, backgroundColor: "#171722" },
+  fileInfoItem: { flex: 1, paddingHorizontal: 14, paddingVertical: 12 },
+  fileInfoDivider: { width: StyleSheet.hairlineWidth, backgroundColor: "#292838" },
+  fileInfoLabel: { color: "#A6A5B5", fontSize: 11, fontWeight: "700" },
+  fileInfoValue: { marginTop: 4, color: "#F6F6FB", fontSize: 14, fontWeight: "800" },
   sourceButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 51, marginTop: 20, borderRadius: 15, backgroundColor: "#4C83FF" },
   primaryButton: { marginTop: 18, borderRadius: 14, backgroundColor: "#4C83FF", paddingHorizontal: 20, paddingVertical: 13 },
   primaryPressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { fetchCategoryWallpapers, fetchLatestWallpapers, fetchRandomWallpaper, fetchWallpaper, getSessionProfile, signInWallify, signOutWallify, uploadWallpaper } from "./wallify-client";
+import { fetchCategoryWallpapers, fetchLatestWallpapers, fetchRandomWallpaper, fetchWallpaper, fetchWallpaperImageMetadata, getSessionProfile, signInWallify, signOutWallify, uploadWallpaper } from "./wallify-client";
 import { fetchWallifyProfile } from "./wallify-profile";
 
 export const appRouter = router({
@@ -36,7 +36,11 @@ export const appRouter = router({
       .query(({ input }) => fetchRandomWallpaper(input.source, input.category)),
     detail: publicProcedure
       .input(z.object({ id: z.string().regex(/^\d+$/) }))
-      .query(({ input }) => fetchWallpaper(input.id)),
+      .query(async ({ input }) => {
+        const wallpaper = await fetchWallpaper(input.id);
+        const imageMetadata = await fetchWallpaperImageMetadata(wallpaper.fullImagePath);
+        return { ...wallpaper, imageMetadata };
+      }),
     login: publicProcedure
       .input(z.object({ account: z.string().min(3).max(320), password: z.string().min(6).max(128) }))
       .mutation(({ input }) => signInWallify(input.account, input.password)),
