@@ -70,3 +70,4 @@
 - [x] 验证新签名构建配置并交付 Keystore 备份
 
 **说明：** 本轮签名重置使用用户指定的 `android` 密码与别名；Keystore 不应提交到 Git。 
+- [ ] 在 build.yml 的 Install EAS CLI 后添加 Set up Expo token 并推送到 GitHub

@@ -47,6 +47,13 @@ jobs:
       - name: Install EAS CLI
         run: npm install --global eas-cli
 
+      - name: Set up Expo token
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          test -n "$EXPO_TOKEN"
+          echo "EXPO_TOKEN=$EXPO_TOKEN" >> "$GITHUB_ENV"
+
       - name: Restore Android signing key
         run: |
           mkdir -p .eas artifacts
