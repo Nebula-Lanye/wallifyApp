@@ -58,3 +58,4 @@
 - [x] 修复中间上传标签的最大更新深度闪退
 - [x] 为中间上传按钮加入稳定的缩放按压反馈
 - [x] 将当前 Wallify 项目提交并推送到 GitHub 仓库 wallifyApp
+- [x] 在 GitHub Actions 中添加手动 Android 本地构建与 APK 上传工作流
