@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { fetchWallpaper, getSessionProfile, signInWallify, signOutWallify, uploadWallpaper } from "./wallify-client";
+import { fetchLatestWallpapers, fetchRandomWallpaper, fetchWallpaper, getSessionProfile, signInWallify, signOutWallify, uploadWallpaper } from "./wallify-client";
 import { fetchWallifyProfile } from "./wallify-profile";
 
 export const appRouter = router({
@@ -25,6 +25,12 @@ export const appRouter = router({
       .mutation(({ input }) => fetchWallifyProfile(input.profileId)),
   }),
   wallify: router({
+    latest: publicProcedure
+      .input(z.object({ limit: z.number().int().min(1).max(40).default(20) }))
+      .query(({ input }) => fetchLatestWallpapers(input.limit)),
+    random: publicProcedure
+      .input(z.object({ source: z.string().min(1).max(32), category: z.string().min(1).max(32) }))
+      .query(({ input }) => fetchRandomWallpaper(input.source, input.category)),
     detail: publicProcedure
       .input(z.object({ id: z.string().regex(/^\d+$/) }))
       .query(({ input }) => fetchWallpaper(input.id)),

@@ -1,21 +1,28 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { WallpaperCard } from "@/components/wallpaper-card";
 import { ScreenContainer } from "@/components/screen-container";
+import { toWallpaper } from "@/data/wallify-feed";
 import { categories, wallpapers } from "@/data/wallpapers";
+import { trpc } from "@/lib/trpc";
 
 export default function DiscoverScreen() {
+  const latest = trpc.wallify.latest.useQuery({ limit: 20 }, { staleTime: 0, refetchOnMount: "always" });
+  const liveWallpapers = latest.data?.map(toWallpaper) ?? [];
+  const items = liveWallpapers.length ? liveWallpapers : wallpapers;
+
   return (
     <ScreenContainer>
       <FlatList
-        data={wallpapers}
+        data={items}
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={latest.isFetching && !latest.isLoading} onRefresh={() => void latest.refetch()} tintColor="#7D9EFF" colors={["#7D9EFF"]} />}
         renderItem={({ item }) => <WallpaperCard wallpaper={item} />}
         ListHeaderComponent={
           <>
@@ -38,8 +45,8 @@ export default function DiscoverScreen() {
 
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>游戏分类</Text>
-              <Pressable onPress={() => router.push("/category/random" as never)} style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
-                <Text style={styles.textButtonLabel}>随机发现</Text>
+              <Pressable onPress={() => router.push("/random" as never)} style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
+                <Text style={styles.textButtonLabel}>随机二次元</Text>
                 <IconSymbol name="arrow.right" size={15} color="#7D9EFF" />
               </Pressable>
             </View>
@@ -64,13 +71,14 @@ export default function DiscoverScreen() {
                 <Text style={styles.sectionTitle}>最近收录</Text>
                 <Text style={styles.sectionDescription}>来自 Wallify 的公开壁纸</Text>
               </View>
-              <Pressable onPress={() => router.push("/category/random" as never)} style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
+              <Pressable onPress={() => router.push("/latest" as never)} style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
                 <Text style={styles.textButtonLabel}>查看全部</Text>
                 <IconSymbol name="arrow.right" size={15} color="#7D9EFF" />
               </Pressable>
             </View>
           </>
         }
+        ListFooterComponent={latest.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步 Wallify 最新上传…</Text></View> : latest.isError ? <Text style={styles.fallbackText}>当前展示本地缓存内容；下拉即可重试同步。</Text> : <Text style={styles.syncText}>已同步官网最新上传 · 下拉刷新</Text>}
       />
     </ScreenContainer>
   );
@@ -98,4 +106,8 @@ const styles = StyleSheet.create({
   categoryPressed: { opacity: 0.6, transform: [{ scale: 0.97 }] },
   categoryIcon: { width: 47, height: 47, alignItems: "center", justifyContent: "center", borderRadius: 16 },
   categoryLabel: { width: "100%", color: "#DAD9E5", fontSize: 10, lineHeight: 14, fontWeight: "700", textAlign: "center" },
+  loading: { alignItems: "center", gap: 8, paddingVertical: 26 },
+  loadingText: { color: "#A6A5B5", fontSize: 12 },
+  syncText: { paddingVertical: 20, color: "#737282", fontSize: 12, textAlign: "center" },
+  fallbackText: { paddingVertical: 20, color: "#FFCB6B", fontSize: 12, textAlign: "center" },
 });

@@ -184,6 +184,76 @@ export async function fetchWallpaper(id: string) {
   return wallpaper;
 }
 
+export function parseWallpaperCards(html: string): WallifyWallpaper[] {
+  const cards = html.split(/<div\s+class=["']wallpaper-card["'][^>]*>/i).slice(1);
+  const seen = new Set<string>();
+
+  return cards.flatMap((card) => {
+    const id = card.match(/\/pages\/wallpaper\.php\?id=(\d+)/i)?.[1];
+    const thumbnailPath = card.match(/<img\s+src=["'](\/uploads\/wallpapers\/thumbs\/[^"']+\.(?:jpg|jpeg|png|webp))/i)?.[1];
+    const title = cleanText(card.match(/class=["']card-title["'][\s\S]*?<a[^>]*>\s*([\s\S]*?)\s*<\/a>/i)?.[1] ?? "");
+    const author = cleanText(card.match(/class=["']card-author["'][\s\S]*?<span>\s*([\s\S]*?)\s*<\/span>/i)?.[1] ?? "Wallify 用户");
+    const categoryLabel = cleanText(card.match(/class=["']card-category["'][\s\S]*?<\/i>\s*([\s\S]*?)\s*<\/span>/i)?.[1] ?? "原神");
+    if (!id || !thumbnailPath || !title || seen.has(id)) return [];
+    seen.add(id);
+    const fileName = thumbnailPath.split("/").pop() ?? "";
+    return [{
+      id,
+      title,
+      category: categoryFromTitle(categoryLabel),
+      author,
+      thumbnailPath,
+      fullImagePath: `/uploads/wallpapers/${fileName}`,
+      featured: /featured-badge/.test(card),
+    }];
+  });
+}
+
+export async function fetchLatestWallpapers(limit = 20) {
+  const response = await originFetch("/");
+  if (!response.ok) throw new Error("暂时无法读取 Wallify 最新上传");
+  const sectionStart = response.body.indexOf("最新上传");
+  const sectionEnd = response.body.indexOf("热门壁纸", sectionStart);
+  const latestSection = sectionStart >= 0 ? response.body.slice(sectionStart, sectionEnd >= 0 ? sectionEnd : undefined) : response.body;
+  return parseWallpaperCards(latestSection).slice(0, limit);
+}
+
+export type RandomWallpaper = {
+  url: string;
+  name: string;
+  type: "image" | "video";
+  source: string;
+  category: string;
+};
+
+export async function fetchRandomWallpaper(source: string, category: string) {
+  // Wallify 随机页默认的 alcy 来源为公开分类图片地址，直接返回可避免其 JSON
+  // 中转在部分网络中长期保持空响应，从而保证原生“换一张”页面立即可用。
+  if (source === "alcy" && /^[a-z0-9]+$/i.test(category)) {
+    return {
+      url: `https://t.alcy.cc/${category}/?t=${Date.now()}`,
+      name: "随机二次元壁纸",
+      type: "image",
+      source,
+      category,
+    } satisfies RandomWallpaper;
+  }
+
+  const response = await originFetch(`/api/random_image.php?mode=json&source=${encodeURIComponent(source)}&category=${encodeURIComponent(category)}&_t=${Date.now()}`);
+  const data = readJson<{ url?: string; name?: string; type?: string }>(response);
+  if (response.ok && data?.url && /^https?:\/\//i.test(data.url)) {
+    return {
+      url: data.url,
+      name: data.name?.trim() || "随机二次元壁纸",
+      type: data.type === "video" ? "video" : "image",
+      source,
+      category,
+    } satisfies RandomWallpaper;
+  }
+
+  throw new Error("随机二次元服务暂未返回图片，请换一个分类后再试。");
+}
+
 async function getUploadCsrf(session: RemoteSession) {
   const uploadPage = await originFetch("/pages/upload.php", {}, session.cookie);
   if (!uploadPage.ok) throw new Error("当前账号没有上传权限");
