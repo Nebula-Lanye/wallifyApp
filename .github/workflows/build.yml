@@ -82,3 +82,4 @@ jobs:
           path: artifacts/wallify.apk
           if-no-files-found: error
           retention-days: 14
+          # trigger re-index
