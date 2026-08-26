@@ -39,7 +39,7 @@ export default function CategoryScreen() {
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refreshCategory()} tintColor="#7D9EFF" colors={["#7D9EFF"]} />}
-        renderItem={({ item }) => <WallpaperCard wallpaper={item} />}
+        renderItem={({ item, index }) => <WallpaperCard wallpaper={item} index={index} />}
         ListHeaderComponent={
           <View style={styles.header}>
             <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.backPressed]} accessibilityLabel="返回">

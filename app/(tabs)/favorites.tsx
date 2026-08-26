@@ -18,7 +18,7 @@ export default function FavoritesScreen() {
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
-        renderItem={({ item }) => <WallpaperCard wallpaper={item} />}
+        renderItem={({ item, index }) => <WallpaperCard wallpaper={item} index={index} />}
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.title}>收藏</Text>
@@ -38,4 +38,3 @@ const styles = StyleSheet.create({
   subtitle: { marginTop: 6, color: "#A6A5B5", fontSize: 13, lineHeight: 19 },
   row: { gap: 12, marginBottom: 12 },
 });
-

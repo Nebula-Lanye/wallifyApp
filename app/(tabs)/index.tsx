@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { MotionView } from "@/components/motion";
 import { WallpaperCard } from "@/components/wallpaper-card";
 import { ScreenContainer } from "@/components/screen-container";
 import { toWallpaper } from "@/data/wallify-feed";
@@ -33,59 +34,61 @@ export default function DiscoverScreen() {
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refreshLatest()} tintColor="#7D9EFF" colors={["#7D9EFF"]} />}
-        renderItem={({ item }) => <WallpaperCard wallpaper={item} />}
+        renderItem={({ item, index }) => <WallpaperCard wallpaper={item} index={index} />}
         ListHeaderComponent={
           <>
-            <View style={styles.header}>
-              <View>
-                <Text style={styles.eyebrow}>WALLIFY</Text>
-                <Text style={styles.heading}>发现你的下一张壁纸</Text>
-                <Text style={styles.subheading}>米哈游游戏壁纸精选，适合手机浏览与收藏。</Text>
+            <MotionView delay={20}>
+              <View style={styles.header}>
+                <View>
+                  <Text style={styles.eyebrow}>WALLIFY</Text>
+                  <Text style={styles.heading}>发现你的下一张壁纸</Text>
+                  <Text style={styles.subheading}>米哈游游戏壁纸精选，适合手机浏览与收藏。</Text>
+                </View>
+                <Image source={{ uri: "https://lkr2312.dpdns.org/assets/images/logo-nav.png?v=2" }} style={styles.logo} contentFit="contain" />
               </View>
-              <Image source={{ uri: "https://lkr2312.dpdns.org/assets/images/logo-nav.png?v=2" }} style={styles.logo} contentFit="contain" />
-            </View>
+            </MotionView>
 
-            <Pressable
-              onPress={() => router.push("/search" as never)}
-              style={({ pressed }) => [styles.searchShortcut, pressed && styles.shortcutPressed]}
-            >
-              <IconSymbol name="magnifyingglass" size={20} color="#A6A5B5" />
-              <Text style={styles.searchPlaceholder}>搜索角色、标题或游戏</Text>
-            </Pressable>
+            <MotionView delay={65}><Pressable
+                onPress={() => router.push("/search" as never)}
+                style={({ pressed }) => [styles.searchShortcut, pressed && styles.shortcutPressed]}
+              >
+                <IconSymbol name="magnifyingglass" size={20} color="#A6A5B5" />
+                <Text style={styles.searchPlaceholder}>搜索角色、标题或游戏</Text>
+              </Pressable></MotionView>
 
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>游戏分类</Text>
-              <Pressable onPress={() => router.push("/random" as never)} style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
-                <Text style={styles.textButtonLabel}>随机二次元</Text>
-                <IconSymbol name="arrow.right" size={15} color="#7D9EFF" />
-              </Pressable>
-            </View>
-
-            <View style={styles.categories}>
-              {categories.map((category) => (
-                <Pressable
-                  key={category.slug}
-                  onPress={() => router.push(`/category/${category.slug}` as never)}
-                  style={({ pressed }) => [styles.categoryCard, pressed && styles.categoryPressed]}
-                >
-                  <View style={[styles.categoryIcon, { backgroundColor: `${category.tint}24` }]}>
-                    <IconSymbol name={category.icon} size={20} color={category.tint} />
-                  </View>
-                  <Text numberOfLines={1} style={styles.categoryLabel}>{category.shortTitle}</Text>
+            <MotionView delay={105}><View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>游戏分类</Text>
+                <Pressable onPress={() => router.push("/random" as never)} style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
+                  <Text style={styles.textButtonLabel}>随机二次元</Text>
+                  <IconSymbol name="arrow.right" size={15} color="#7D9EFF" />
                 </Pressable>
-              ))}
-            </View>
+              </View></MotionView>
 
-            <View style={styles.sectionHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>最近收录</Text>
-                <Text style={styles.sectionDescription}>来自 Wallify 的公开壁纸</Text>
-              </View>
-              <Pressable onPress={() => router.push("/latest" as never)} style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
-                <Text style={styles.textButtonLabel}>查看全部</Text>
-                <IconSymbol name="arrow.right" size={15} color="#7D9EFF" />
-              </Pressable>
-            </View>
+            <MotionView delay={145}><View style={styles.categories}>
+                {categories.map((category) => (
+                  <Pressable
+                    key={category.slug}
+                    onPress={() => router.push(`/category/${category.slug}` as never)}
+                    style={({ pressed }) => [styles.categoryCard, pressed && styles.categoryPressed]}
+                  >
+                    <View style={[styles.categoryIcon, { backgroundColor: `${category.tint}24` }]}>
+                      <IconSymbol name={category.icon} size={20} color={category.tint} />
+                    </View>
+                    <Text numberOfLines={1} style={styles.categoryLabel}>{category.shortTitle}</Text>
+                  </Pressable>
+                ))}
+              </View></MotionView>
+
+            <MotionView delay={185}><View style={styles.sectionHeader}>
+                <View>
+                  <Text style={styles.sectionTitle}>最近收录</Text>
+                  <Text style={styles.sectionDescription}>来自 Wallify 的公开壁纸</Text>
+                </View>
+                <Pressable onPress={() => router.push("/latest" as never)} style={({ pressed }) => [styles.textButton, pressed && styles.textButtonPressed]}>
+                  <Text style={styles.textButtonLabel}>查看全部</Text>
+                  <IconSymbol name="arrow.right" size={15} color="#7D9EFF" />
+                </Pressable>
+              </View></MotionView>
           </>
         }
         ListFooterComponent={latest.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步 Wallify 最新上传…</Text></View> : latest.isError ? <Text style={styles.fallbackText}>当前展示本地缓存内容；下拉即可重试同步。</Text> : <Text style={styles.syncText}>已同步官网最新上传 · 下拉刷新以检查新壁纸</Text>}

@@ -50,7 +50,7 @@ export default function SearchScreen() {
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => <WallpaperCard wallpaper={item} />}
+          renderItem={({ item, index }) => <WallpaperCard wallpaper={item} index={index} />}
           ListHeaderComponent={<Text style={styles.resultLabel}>{results.length ? `找到 ${results.length} 张壁纸` : ""}</Text>}
           ListEmptyComponent={<EmptyState title="没有找到匹配壁纸" description="换一个角色名或游戏分类再试试。" />}
         />
@@ -78,4 +78,3 @@ const styles = StyleSheet.create({
   tip: { flexDirection: "row", alignItems: "center", gap: 10, margin: 16, borderRadius: 15, backgroundColor: "#171722", padding: 15 },
   tipText: { flex: 1, color: "#DAD9E5", fontSize: 13, lineHeight: 19 },
 });
-
