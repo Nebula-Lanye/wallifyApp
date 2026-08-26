@@ -25,6 +25,8 @@ const MAPPING = {
   "shuffle": "shuffle",
   "xmark.circle.fill": "cancel",
   "safari.fill": "language",
+  "person.crop.circle.fill": "account-circle",
+  "person.badge.plus": "person-add",
   "info.circle.fill": "info",
   "lock.fill": "lock",
   "square.and.arrow.up": "ios-share",
@@ -44,4 +46,3 @@ export function IconSymbol({
 }) {
   return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
 }
-
