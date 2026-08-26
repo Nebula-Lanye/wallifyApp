@@ -235,26 +235,37 @@ export type RandomWallpaper = {
   category: string;
 };
 
+const RANDOM_SOURCE_CATEGORIES: Record<string, ReadonlySet<string>> = {
+  alcy: new Set(["ycy", "moez", "ai", "ysz", "pc", "moe", "fj", "bd", "ys", "mp", "moemp", "ysmp", "aimp", "tx", "lai", "xhl", "acg"]),
+  furina: new Set(["furina"]),
+  uapipro: new Set(["acg", "anime", "pc_wallpaper", "pc_wallpaper_4k", "pc_wallpaper_s4k", "mobile_wallpaper", "mobile_wallpaper_4k", "mobile_wallpaper_s4k", "general_anime", "general_anime_4k", "general_anime_s4k", "furry", "furry_4k", "furry_s4k"]),
+};
+
 export async function fetchRandomWallpaper(source: string, category: string) {
-  // Wallify 随机页默认的 alcy 来源为公开分类图片地址，直接返回可避免其 JSON
-  // 中转在部分网络中长期保持空响应，从而保证原生“换一张”页面立即可用。
-  if (source === "alcy" && /^[a-z0-9]+$/i.test(category)) {
+  if (!RANDOM_SOURCE_CATEGORIES[source]?.has(category)) throw new Error("无效的随机壁纸来源或分类");
+
+  try {
+    const response = await originFetch(`/api/random_image.php?mode=json&source=${encodeURIComponent(source)}&category=${encodeURIComponent(category)}&_t=${Date.now()}`);
+    const data = readJson<{ url?: string; name?: string; type?: string }>(response);
+    if (response.ok && data?.url && /^https?:\/\//i.test(data.url)) {
+      return {
+        url: data.url,
+        name: data.name?.trim() || "随机二次元壁纸",
+        type: data.type === "video" ? "video" : "image",
+        source,
+        category,
+      } satisfies RandomWallpaper;
+    }
+  } catch {
+    // 栗次元的直接分类入口会在下方作为同源随机接口的网络降级方案。
+  }
+
+  // 栗次元偶发空响应时沿用网站同源分类入口，保证默认随机页仍可使用。
+  if (source === "alcy") {
     return {
       url: `https://t.alcy.cc/${category}/?t=${Date.now()}`,
       name: "随机二次元壁纸",
       type: "image",
-      source,
-      category,
-    } satisfies RandomWallpaper;
-  }
-
-  const response = await originFetch(`/api/random_image.php?mode=json&source=${encodeURIComponent(source)}&category=${encodeURIComponent(category)}&_t=${Date.now()}`);
-  const data = readJson<{ url?: string; name?: string; type?: string }>(response);
-  if (response.ok && data?.url && /^https?:\/\//i.test(data.url)) {
-    return {
-      url: data.url,
-      name: data.name?.trim() || "随机二次元壁纸",
-      type: data.type === "video" ? "video" : "image",
       source,
       category,
     } satisfies RandomWallpaper;
