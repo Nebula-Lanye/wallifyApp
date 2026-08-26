@@ -63,5 +63,10 @@
 - [x] 生成持久 Android 签名密钥并导入 GitHub Actions Secrets
 - [x] 让 Android 本地构建工作流使用仓库签名密钥
 - [x] 将 Keystore Base64、密钥库密码、别名和密钥密码导入 GitHub Actions Secrets
-- [ ] 将当前 Android Keystore 与签名参数同步到 Expo 云端凭证
-- [ ] 使用 Expo Access Token 关联 EAS 项目并上传当前 Android 签名凭证
+- [x] 将当前 Android Keystore 与签名参数同步到 Expo 云端凭证
+- [x] 使用 Expo Access Token 关联 EAS 项目并上传当前 Android 签名凭证
+- [x] 生成新的 Android Keystore 并安全备份
+- [x] 更新 GitHub Actions Secrets 与 Expo 云端 Android 凭证
+- [x] 验证新签名构建配置并交付 Keystore 备份
+
+**说明：** 本轮签名重置使用用户指定的 `android` 密码与别名；Keystore 不应提交到 Git。 
