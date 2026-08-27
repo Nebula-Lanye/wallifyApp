@@ -1,10 +1,11 @@
 import * as FileSystem from "expo-file-system/legacy";
+import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
-import * as MediaLibrary from "expo-media-library";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { Stack, router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -12,15 +13,15 @@ import { ScreenContainer } from "@/components/screen-container";
 import { categories } from "@/data/wallpapers";
 import { useWallifySession } from "@/hooks/use-wallify-session";
 import { trpc } from "@/lib/trpc";
+import { WALLPAPER_ANDROID_DOCUMENT_PICKER_OPTIONS, WALLPAPER_IOS_IMAGE_PICKER_OPTIONS } from "@/lib/wallify-image-picker";
 
 type PickedAsset = { uri: string; filename: string; mimeType: string; size: number };
 type UploadSuccess = { id: string | null; title: string };
+type SystemImageAsset = { uri: string; fileName?: string | null; mimeType?: string | null; fileSize?: number | null };
 
 export default function UploadScreen() {
   const { session, isLoading: sessionLoading } = useWallifySession();
   const [asset, setAsset] = useState<PickedAsset | null>(null);
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
-  const [assets, setAssets] = useState<MediaLibrary.Asset[]>([]);
   const [isAssetsLoading, setIsAssetsLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -53,43 +54,43 @@ export default function UploadScreen() {
   }));
   const successIconStyle = useAnimatedStyle(() => ({ transform: [{ scale: 0.78 + successProgress.value * 0.22 }] }));
 
+  const applySystemImage = async ({ uri, fileName, mimeType, fileSize }: SystemImageAsset) => {
+    const details = await FileSystem.getInfoAsync(uri);
+    const size = "size" in details && typeof details.size === "number" ? details.size : fileSize ?? 0;
+    if (size > 10 * 1024 * 1024) {
+      Alert.alert("图片过大", "Wallify 支持最大 10MB 的 JPG、PNG、GIF 或 WebP 图片。");
+      return;
+    }
+    const filename = fileName?.trim() || `wallify-${Date.now()}.jpg`;
+    const extension = filename.split(".").pop()?.toLowerCase();
+    const normalizedMimeType = mimeType === "image/png" || extension === "png" ? "image/png" : mimeType === "image/webp" || extension === "webp" ? "image/webp" : mimeType === "image/gif" || extension === "gif" ? "image/gif" : "image/jpeg";
+    setAsset({ uri, filename, mimeType: normalizedMimeType, size });
+  };
+
   const openGallery = async () => {
     if (Platform.OS === "web") {
       Alert.alert("请在移动设备中选择图片", "原生上传的图片选择器仅在 iOS 和 Android 中可用。");
       return;
     }
+    if (isAssetsLoading) return;
     setIsAssetsLoading(true);
     try {
-      const permission = await MediaLibrary.requestPermissionsAsync(false, ["photo"]);
-      if (!permission.granted) {
-        Alert.alert("需要相册权限", "允许访问相册后才能选择需要上传的壁纸。");
+      if (Platform.OS === "android") {
+        const result = await DocumentPicker.getDocumentAsync(WALLPAPER_ANDROID_DOCUMENT_PICKER_OPTIONS);
+        if (result.canceled || !result.assets[0]) return;
+        const selected = result.assets[0];
+        await applySystemImage({ uri: selected.uri, fileName: selected.name, mimeType: selected.mimeType, fileSize: selected.size });
         return;
       }
-      const result = await MediaLibrary.getAssetsAsync({ first: 60, mediaType: "photo", sortBy: [["creationTime", false]] });
-      setAssets(result.assets);
-      setIsPickerVisible(true);
-    } catch {
-      Alert.alert("无法打开相册", "请稍后重试或检查系统权限。");
+      const result = await ImagePicker.launchImageLibraryAsync(WALLPAPER_IOS_IMAGE_PICKER_OPTIONS);
+      if (result.canceled || !result.assets[0]) return;
+      const selected = result.assets[0];
+      await applySystemImage({ uri: selected.uri, fileName: selected.fileName, mimeType: selected.mimeType, fileSize: selected.fileSize });
+    } catch (error) {
+      Alert.alert("无法打开系统图片选择器", error instanceof Error ? error.message : "请检查系统文件访问权限后重试。");
     } finally {
       setIsAssetsLoading(false);
     }
-  };
-
-  const chooseAsset = async (selected: MediaLibrary.Asset) => {
-    const info = await MediaLibrary.getAssetInfoAsync(selected);
-    const uri = info.localUri || selected.uri;
-    if (!uri) return;
-    const details = await FileSystem.getInfoAsync(uri);
-    const size = "size" in details && typeof details.size === "number" ? details.size : selected.width * selected.height;
-    if (size > 10 * 1024 * 1024) {
-      Alert.alert("图片过大", "Wallify 支持最大 10MB 的 JPG、PNG、GIF 或 WebP 图片。");
-      return;
-    }
-    const filename = selected.filename || `wallify-${Date.now()}.jpg`;
-    const extension = filename.split(".").pop()?.toLowerCase();
-    const mimeType = extension === "png" ? "image/png" : extension === "webp" ? "image/webp" : extension === "gif" ? "image/gif" : "image/jpeg";
-    setAsset({ uri, filename, mimeType, size });
-    setIsPickerVisible(false);
   };
 
   const submit = async () => {
@@ -147,17 +148,16 @@ export default function UploadScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.nav}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><IconSymbol name="chevron.left" size={24} color="#FFFFFF" /></Pressable><Text style={styles.navTitle}>上传壁纸</Text><View style={styles.navSpacer} /></View>
         <Text style={styles.lead}>从设备相册选择壁纸，在 Wallify 原生发布。</Text>
-        <Pressable onPress={() => void openGallery()} style={({ pressed }) => [styles.pickArea, pressed && styles.pressed]}>
+        <Pressable onPress={() => void openGallery()} disabled={isAssetsLoading} style={({ pressed }) => [styles.pickArea, (pressed || isAssetsLoading) && styles.pressed]}>
           {asset ? <Image source={{ uri: asset.uri }} style={styles.preview} contentFit="cover" /> : <><IconSymbol name="photo.on.rectangle" size={31} color="#A777FF" /><Text style={styles.pickTitle}>{isAssetsLoading ? "正在读取相册…" : "从相册选择壁纸"}</Text><Text style={styles.pickCopy}>JPG、PNG、GIF、WebP · 最大 10MB</Text></>}
         </Pressable>
-        {asset ? <Pressable onPress={() => void openGallery()} style={({ pressed }) => [styles.changePhoto, pressed && styles.pressed]}><Text style={styles.changePhotoText}>更换图片</Text></Pressable> : null}
+        {asset ? <Pressable onPress={() => void openGallery()} disabled={isAssetsLoading} style={({ pressed }) => [styles.changePhoto, (pressed || isAssetsLoading) && styles.pressed]}><Text style={styles.changePhotoText}>更换图片</Text></Pressable> : null}
         <Text style={styles.label}>标题</Text><TextInput value={title} onChangeText={setTitle} placeholder="给壁纸起个名字" placeholderTextColor="#727181" style={styles.input} returnKeyType="next" />
         <Text style={styles.label}>游戏分类</Text><View style={styles.categoryGrid}>{categories.map((category, index) => <Pressable key={category.slug} onPress={() => setCategoryId(String(index + 1))} style={({ pressed }) => [styles.categoryButton, categoryId === String(index + 1) && styles.categorySelected, pressed && styles.pressed]}><Text style={[styles.categoryText, categoryId === String(index + 1) && styles.categoryTextSelected]}>{category.shortTitle}</Text></Pressable>)}</View>
         <Text style={styles.label}>描述 <Text style={styles.optional}>（选填）</Text></Text><TextInput value={description} onChangeText={setDescription} placeholder="描述一下这张壁纸" placeholderTextColor="#727181" style={[styles.input, styles.textarea]} multiline />
         <Text style={styles.label}>标签 <Text style={styles.optional}>（选填）</Text></Text><TextInput value={tags} onChangeText={setTags} placeholder="用逗号分隔，如：原神, 风景" placeholderTextColor="#727181" style={styles.input} />
         <Pressable onPress={() => void submit()} disabled={upload.isPending} style={({ pressed }) => [styles.primaryButton, (pressed || upload.isPending) && styles.pressed]}>{upload.isPending ? <ActivityIndicator color="#FFFFFF" /> : <><IconSymbol name="square.and.arrow.up" size={18} color="#FFFFFF" /><Text style={styles.primaryText}>发布到 Wallify</Text></>}</Pressable>
       </ScrollView>
-      <Modal transparent visible={isPickerVisible} animationType="slide" onRequestClose={() => setIsPickerVisible(false)}><View style={styles.sheetBackdrop}><View style={styles.sheet}><View style={styles.sheetHandle} /><Text style={styles.sheetTitle}>选择壁纸</Text><FlatList data={assets} numColumns={3} keyExtractor={(item) => item.id} contentContainerStyle={styles.assetGrid} renderItem={({ item }) => <Pressable onPress={() => void chooseAsset(item)} style={({ pressed }) => [styles.assetTile, pressed && styles.pressed]}><Image source={{ uri: item.uri }} style={styles.assetImage} contentFit="cover" /></Pressable>} /></View></View></Modal>
       <Modal transparent visible={Boolean(uploadSuccess)} animationType="none" onRequestClose={() => setUploadSuccess(null)}><View style={styles.successBackdrop}><Animated.View style={[styles.successCard, successCardStyle]}><Animated.View style={[styles.successIcon, successIconStyle]}><IconSymbol name="checkmark.circle.fill" size={33} color="#FFFFFF" /></Animated.View><Text style={styles.successTitle}>壁纸发布成功</Text><Text style={styles.successCopy}>“{uploadSuccess?.title}”已发布到 Wallify。</Text><Pressable onPress={viewPublishedWallpaper} style={({ pressed }) => [styles.successPrimary, pressed && styles.pressed]}><Text style={styles.successPrimaryText}>{uploadSuccess?.id ? "查看壁纸详情" : "完成"}</Text></Pressable><Pressable onPress={() => setUploadSuccess(null)} style={({ pressed }) => [styles.successSecondary, pressed && styles.pressed]}><Text style={styles.successSecondaryText}>继续编辑</Text></Pressable></Animated.View></View></Modal>
     </ScreenContainer>
   );

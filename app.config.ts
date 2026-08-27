@@ -50,7 +50,7 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
-    buildNumber: "3",
+    buildNumber: "5",
     "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -62,7 +62,7 @@ const config: ExpoConfig = {
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
-    versionCode: 3,
+    versionCode: 5,
     package: env.androidPackage,
     permissions: ["POST_NOTIFICATIONS"],
     intentFilters: [
@@ -118,6 +118,7 @@ const config: ExpoConfig = {
         photosPermission: "Allow $(PRODUCT_NAME) to choose a profile avatar.",
       },
     ],
+    "expo-document-picker",
     [
       "expo-media-library",
       {
