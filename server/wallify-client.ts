@@ -5,6 +5,7 @@ import { imageSize } from "image-size";
 
 import type { WallifyProfile } from "./wallify-profile";
 import { fetchWallifyProfile } from "./wallify-profile";
+import { createWallifyOriginUnavailableError, isWallifyOriginUnavailableError, isWallifyOriginUnavailableStatus } from "./wallify-origin-error";
 
 export const WALLIFY_ORIGIN = "https://lkr2312.dpdns.org";
 
@@ -55,17 +56,23 @@ async function originFetch(path: string, options: RequestInit = {}, cookie?: str
   const headers = Object.fromEntries(new Headers(options.headers).entries());
   headers["User-Agent"] = "Wallify-Mobile/1.0";
   if (cookie) headers.Cookie = cookie;
-  const response = await axios.request<string>({
-    url: `${WALLIFY_ORIGIN}${path}`,
-    method: options.method || "GET",
-    data: options.body,
-    headers,
-    timeout: 15_000,
-    maxRedirects: 0,
-    responseType: "text",
-    transformResponse: [(data) => data],
-    validateStatus: () => true,
-  });
+  let response;
+  try {
+    response = await axios.request<string>({
+      url: `${WALLIFY_ORIGIN}${path}`,
+      method: options.method || "GET",
+      data: options.body,
+      headers,
+      timeout: 15_000,
+      maxRedirects: 0,
+      responseType: "text",
+      transformResponse: [(data) => data],
+      validateStatus: () => true,
+    });
+  } catch {
+    throw createWallifyOriginUnavailableError();
+  }
+  if (isWallifyOriginUnavailableStatus(response.status)) throw createWallifyOriginUnavailableError(response.status);
   const rawCookie = response.headers["set-cookie"];
   return {
     status: response.status,
@@ -388,7 +395,8 @@ export async function fetchRandomWallpaper(source: string, category: string) {
         category,
       } satisfies RandomWallpaper;
     }
-  } catch {
+  } catch (error) {
+    if (isWallifyOriginUnavailableError(error)) throw error;
     // 栗次元的直接分类入口会在下方作为同源随机接口的网络降级方案。
   }
 

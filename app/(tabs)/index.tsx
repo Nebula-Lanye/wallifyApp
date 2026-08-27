@@ -6,6 +6,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Tex
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MotionView } from "@/components/motion";
 import { WallpaperCard } from "@/components/wallpaper-card";
+import { WallifyServiceErrorState } from "@/components/wallify-service-error-state";
 import { ScreenContainer } from "@/components/screen-container";
 import { toWallpaper } from "@/data/wallify-feed";
 import { categories, wallpapers } from "@/data/wallpapers";
@@ -91,7 +92,7 @@ export default function DiscoverScreen() {
               </View></MotionView>
           </>
         }
-        ListFooterComponent={latest.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步 Wallify 最新上传…</Text></View> : latest.isError ? <Text style={styles.fallbackText}>当前展示本地缓存内容；下拉即可重试同步。</Text> : <Text style={styles.syncText}>已同步官网最新上传 · 下拉刷新以检查新壁纸</Text>}
+        ListFooterComponent={latest.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步 Wallify 最新上传…</Text></View> : latest.isError ? <WallifyServiceErrorState error={latest.error} onRetry={() => void refreshLatest()} compact /> : <Text style={styles.syncText}>已同步官网最新上传 · 下拉刷新以检查新壁纸</Text>}
       />
     </ScreenContainer>
   );

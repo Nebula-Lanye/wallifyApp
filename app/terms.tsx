@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { WallifyServiceErrorState } from "@/components/wallify-service-error-state";
 import { trpc } from "@/lib/trpc";
 
 export default function TermsScreen() {
@@ -13,7 +14,7 @@ export default function TermsScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.nav}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]} accessibilityLabel="返回"><IconSymbol name="chevron.left" size={23} color="#FFFFFF" /></Pressable><Text style={styles.navTitle}>用户协议</Text><View style={styles.navSpacer} /></View>
         <Text style={styles.lead}>内容同步自 Wallify 官网使用条款。</Text>
-        {terms.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /></View> : terms.data ? <View style={styles.document}>{terms.data.sections.map((section) => <View key={section.title} style={styles.section}><Text style={styles.sectionTitle}>{section.title}</Text>{section.paragraphs.map((paragraph, index) => <Text key={`${section.title}-p-${index}`} style={styles.paragraph}>{paragraph}</Text>)}{section.bullets.map((bullet, index) => <View key={`${section.title}-b-${index}`} style={styles.bulletLine}><Text style={styles.bullet}>•</Text><Text style={styles.bulletText}>{bullet}</Text></View>)}</View>)}</View> : <View style={styles.error}><Text style={styles.errorTitle}>暂时无法读取用户协议</Text><Pressable onPress={() => void terms.refetch()} style={({ pressed }) => [styles.retry, pressed && styles.pressed]}><Text style={styles.retryText}>重新加载</Text></Pressable></View>}
+        {terms.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /></View> : terms.data ? <View style={styles.document}>{terms.data.sections.map((section) => <View key={section.title} style={styles.section}><Text style={styles.sectionTitle}>{section.title}</Text>{section.paragraphs.map((paragraph, index) => <Text key={`${section.title}-p-${index}`} style={styles.paragraph}>{paragraph}</Text>)}{section.bullets.map((bullet, index) => <View key={`${section.title}-b-${index}`} style={styles.bulletLine}><Text style={styles.bullet}>•</Text><Text style={styles.bulletText}>{bullet}</Text></View>)}</View>)}</View> : <WallifyServiceErrorState error={terms.error} onRetry={() => void terms.refetch()} />}
       </ScrollView>
     </ScreenContainer>
   );

@@ -8,6 +8,7 @@ import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View }
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { WallifyServiceErrorState } from "@/components/wallify-service-error-state";
 import { wallifyImageUrl } from "@/data/wallify-image";
 import { getCategory, getWallpaper } from "@/data/wallpapers";
 import { useFavorites } from "@/hooks/use-favorites";
@@ -105,6 +106,7 @@ export default function WallpaperDetailScreen() {
   return (
     <ScreenContainer edges={["top", "bottom", "left", "right"]}>
       <Stack.Screen options={{ headerShown: false }} />
+      {remoteDetail.isError ? <WallifyServiceErrorState error={remoteDetail.error} onRetry={() => void remoteDetail.refetch()} compact /> : null}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
         <View style={[styles.mediaArea, { aspectRatio: imageAspectRatio }]}>
           <Image

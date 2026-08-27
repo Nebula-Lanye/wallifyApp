@@ -7,6 +7,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { type LinkedWallifyProfile, useWallifyProfile } from "@/hooks/use-wallify-profile";
 import { useWallifySession } from "@/hooks/use-wallify-session";
 import { trpc } from "@/lib/trpc";
+import { getWallifyServiceIssue } from "@/lib/wallify-service-error";
 
 export default function LoginScreen() {
   const { redirectTo } = useLocalSearchParams<{ redirectTo?: string }>();
@@ -30,7 +31,8 @@ export default function LoginScreen() {
       setPassword("");
       router.replace(destination as never);
     } catch (error) {
-      Alert.alert("登录失败", error instanceof Error ? error.message : "请稍后再试。 ");
+      const issue = getWallifyServiceIssue(error);
+      Alert.alert(issue?.title ?? "登录失败", issue?.description ?? (error instanceof Error ? error.message : "请稍后再试。"));
     }
   };
 

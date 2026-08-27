@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import { createWallifyOriginUnavailableError, isWallifyOriginUnavailableStatus } from "./wallify-origin-error";
+
 const WALLIFY_ORIGIN = "https://lkr2312.dpdns.org";
 
 export type WallifyProfile = {
@@ -60,13 +62,20 @@ export function parseWallifyProfile(html: string, profileId: number): WallifyPro
 
 export async function fetchWallifyProfile(profileId: number): Promise<WallifyProfile> {
   const profileUrl = `${WALLIFY_ORIGIN}/pages/profile.php?id=${profileId}`;
-  const response = await axios.get<string>(profileUrl, {
-    headers: { "User-Agent": "Wallify-Mobile/1.0" },
-    timeout: 10_000,
-    responseType: "text",
-    transformResponse: [(data) => data],
-    validateStatus: () => true,
-  });
+  let response;
+  try {
+    response = await axios.get<string>(profileUrl, {
+      headers: { "User-Agent": "Wallify-Mobile/1.0" },
+      timeout: 10_000,
+      responseType: "text",
+      transformResponse: [(data) => data],
+      validateStatus: () => true,
+    });
+  } catch {
+    throw createWallifyOriginUnavailableError();
+  }
+
+  if (isWallifyOriginUnavailableStatus(response.status)) throw createWallifyOriginUnavailableError(response.status);
 
   if (response.status < 200 || response.status >= 300) {
     throw new Error("无法读取该 Wallify 公开资料");

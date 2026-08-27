@@ -11,6 +11,7 @@ import { wallifyImageUrl } from "@/data/wallify-image";
 import { useWallifyProfile, type LinkedWallifyProfile } from "@/hooks/use-wallify-profile";
 import { useWallifySession } from "@/hooks/use-wallify-session";
 import { trpc } from "@/lib/trpc";
+import { getWallifyServiceIssue } from "@/lib/wallify-service-error";
 
 function extractProfileId(value: string) {
   const normalized = value.trim();
@@ -48,7 +49,8 @@ export default function SettingsScreen() {
       setIsLinkSheetVisible(false);
       setProfileIdInput("");
     } catch (error) {
-      Alert.alert("关联失败", error instanceof Error ? error.message : "暂时无法读取该公开资料，请稍后再试。");
+      const issue = getWallifyServiceIssue(error);
+      Alert.alert(issue?.title ?? "关联失败", issue?.description ?? (error instanceof Error ? error.message : "暂时无法读取该公开资料，请稍后再试。"));
     }
   };
 
@@ -68,7 +70,8 @@ export default function SettingsScreen() {
         await saveProfile(resolved as LinkedWallifyProfile);
       }
     } catch (error) {
-      Alert.alert("刷新失败", error instanceof Error ? error.message : "请稍后再试。");
+      const issue = getWallifyServiceIssue(error);
+      Alert.alert(issue?.title ?? "刷新失败", issue?.description ?? (error instanceof Error ? error.message : "请稍后再试。"));
     }
   };
 

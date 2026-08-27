@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { WallpaperCard } from "@/components/wallpaper-card";
+import { WallifyServiceErrorState } from "@/components/wallify-service-error-state";
 import { GameSlug, getCategory, wallpapers } from "@/data/wallpapers";
 import { toWallpaper } from "@/data/wallify-feed";
 import { trpc } from "@/lib/trpc";
@@ -51,7 +52,8 @@ export default function CategoryScreen() {
             </View>
           </View>
         }
-        ListEmptyComponent={liveCategory.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步分类壁纸…</Text></View> : <EmptyState title="该分类暂时没有壁纸" description="请下拉刷新后再试。" />}
+        ListEmptyComponent={liveCategory.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步分类壁纸…</Text></View> : liveCategory.isError ? <WallifyServiceErrorState error={liveCategory.error} onRetry={() => void refreshCategory()} /> : <EmptyState title="该分类暂时没有壁纸" description="请下拉刷新后再试。" />}
+        ListFooterComponent={liveCategory.isError && items.length > 0 ? <WallifyServiceErrorState error={liveCategory.error} onRetry={() => void refreshCategory()} compact /> : null}
       />
     </ScreenContainer>
   );

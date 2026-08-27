@@ -14,6 +14,7 @@ import { categories } from "@/data/wallpapers";
 import { useWallifySession } from "@/hooks/use-wallify-session";
 import { trpc } from "@/lib/trpc";
 import { WALLPAPER_ANDROID_DOCUMENT_PICKER_OPTIONS, WALLPAPER_IOS_IMAGE_PICKER_OPTIONS } from "@/lib/wallify-image-picker";
+import { getWallifyServiceIssue } from "@/lib/wallify-service-error";
 
 type PickedAsset = { uri: string; filename: string; mimeType: string; size: number };
 type UploadSuccess = { id: string | null; title: string };
@@ -116,7 +117,8 @@ export default function UploadScreen() {
       });
       setUploadSuccess({ id: result.id, title: title.trim() });
     } catch (error) {
-      Alert.alert("上传失败", error instanceof Error ? error.message : "请稍后重试。");
+      const issue = getWallifyServiceIssue(error);
+      Alert.alert(issue?.title ?? "上传失败", issue?.description ?? (error instanceof Error ? error.message : "请稍后重试。"));
     }
   };
 

@@ -9,6 +9,7 @@ import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, 
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { WallifyServiceErrorState } from "@/components/wallify-service-error-state";
 import { getRandomSource, randomSources } from "@/data/wallify-feed";
 import { trpc } from "@/lib/trpc";
 
@@ -146,9 +147,11 @@ export default function RandomWallpapersScreen() {
         </ScrollView>
 
         <View style={styles.media}>
-          {isLoadingFirstItem ? <View style={styles.center}><ActivityIndicator color="#7D9EFF" size="large" /><Text style={styles.loadingText}>正在获取随机壁纸…</Text></View> : activeItem?.type === "video" ? <RandomVideo url={activeItem.url} /> : activeItem?.url ? <Image source={{ uri: activeItem.url }} style={styles.image} contentFit="contain" transition={220} /> : <View style={styles.center}><Text style={styles.loadingText}>{random.error?.message ?? "暂时没有获取到随机壁纸。"}</Text></View>}
+          {isLoadingFirstItem ? <View style={styles.center}><ActivityIndicator color="#7D9EFF" size="large" /><Text style={styles.loadingText}>正在获取随机壁纸…</Text></View> : activeItem?.type === "video" ? <RandomVideo url={activeItem.url} /> : activeItem?.url ? <Image source={{ uri: activeItem.url }} style={styles.image} contentFit="contain" transition={220} /> : <View style={styles.center}><Text style={styles.loadingText}>暂时没有获取到随机壁纸。</Text></View>}
           {activeItem && random.isFetching && !showingHistory ? <View style={styles.refreshing}><ActivityIndicator color="#FFFFFF" size="small" /><Text style={styles.refreshingText}>正在换一张…</Text></View> : null}
         </View>
+
+        {random.isError ? <WallifyServiceErrorState error={random.error} onRetry={requestNext} /> : null}
 
         <View style={styles.meta}>
           <Text style={styles.metaLabel}>{sourceForItem.label} · {categoryForItem.label}</Text>
