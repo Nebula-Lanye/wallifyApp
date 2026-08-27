@@ -104,3 +104,6 @@
 - [x] 编写项目 README，说明 Wallify 功能、开发与 Android 构建方式
 - [x] 审校 README，确保不包含密钥、账户密码或凭证值
 - [x] 提交并推送 README 到 GitHub main
+- [x] 将仓库 README 重写为面向普通用户的 Wallify 介绍
+- [x] 将开发、构建与密钥说明迁移至维护者文档
+- [x] 审校用户 README 不包含维护者配置内容并推送 GitHub
