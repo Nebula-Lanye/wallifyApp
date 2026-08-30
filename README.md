@@ -27,7 +27,7 @@ Wallify 是 Wallify 壁纸分享网站的移动应用。你可以在应用内发
 
 ## 获取更新与反馈
 
-新版本发布后，请下载并安装最新 APK。应用设置页中的“检查更新”可查看当前安装版本。使用过程中如遇到问题或有功能建议，请通过 [GitHub Issues](https://github.com/Nebula-Lanye/wallifyApp/issues) 提交反馈，并尽量说明手机型号、系统版本和复现步骤。
+新版本发布后，请下载并安装最新 APK。应用设置页中的“检查更新”可查看当前安装版本。使用过程中如遇到问题或有功能建议，请通过 [GitHub Issues](https://github.com/Nebula-Lanye/wallifyApp/issues)或通过邮箱（lkr2312@163.com） 提交反馈，并尽量说明手机型号、系统版本和复现步骤。
 
 ## 更新说明
 
