@@ -116,4 +116,4 @@
 - [x] 使用 SecureStore 保存 beta token，清理旧 session-cookie 会话数据
 - [x] 为 AppAPI 适配、token 滑动续期和错误码补充自动化测试
 - [x] 验证 beta 类型检查、测试、公开 API 连通性和 main 分支未被修改
-- [ ] 将 beta API 改造提交并推送到 GitHub beta 分支
+- [x] 将 beta API 改造提交并推送到 GitHub beta 分支
