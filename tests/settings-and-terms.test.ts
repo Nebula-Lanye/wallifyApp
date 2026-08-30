@@ -1,18 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { parseWallifyAccountSettings, parseWallifyTerms } from "../server/wallify-client";
+import { fetchWallifyTerms, updateWallifyAvatar, updateWallifyProfile } from "../server/wallify-client";
 
-describe("Wallify settings and terms parsing", () => {
-  it("reads the editable website profile fields", () => {
-    const profile = parseWallifyAccountSettings('<input name="username" value="admin"><input value="admin@wallify.test" name="email"><textarea name="bio">保持热爱</textarea>');
-    expect(profile).toEqual({ username: "admin", email: "admin@wallify.test", bio: "保持热爱" });
+const validToken = "a".repeat(48);
+
+describe("Wallify AppAPI settings boundaries", () => {
+  it("does not fall back to website HTML for terms", async () => {
+    await expect(fetchWallifyTerms()).rejects.toThrow("terms action");
   });
 
-  it("keeps official terms headings, paragraphs and rules", () => {
-    const terms = parseWallifyTerms('<h2>接受条款</h2><p>同意后方可使用。</p><h2>用户行为规范</h2><p>使用本站时，您同意：</p><ul><li>不上传侵权内容</li><li>不破坏系统</li></ul>');
-    expect(terms).toEqual([
-      { title: "接受条款", paragraphs: ["同意后方可使用。"], bullets: [] },
-      { title: "用户行为规范", paragraphs: ["使用本站时，您同意："], bullets: ["不上传侵权内容", "不破坏系统"] },
-    ]);
+  it("reports profile and avatar actions that are not defined by AppAPI", async () => {
+    await expect(updateWallifyProfile({ token: validToken, username: "admin", email: "admin@example.com", bio: "" })).rejects.toThrow("update_profile action");
+    await expect(updateWallifyAvatar({ token: validToken, fileName: "avatar.jpg", mimeType: "image/jpeg", fileBase64: "AA==" })).rejects.toThrow("upload_avatar action");
   });
 });

@@ -1,58 +1,76 @@
-import { COOKIE_NAME } from "../shared/const.js";
 import { z } from "zod";
-import { getSessionCookieOptions } from "./_core/cookies";
+
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
-import { fetchCategoryWallpapers, fetchLatestWallpapers, fetchRandomWallpaper, fetchWallpaper, fetchWallpaperImageMetadata, fetchWallifyTerms, getSessionProfile, getWallifyAccountSettings, signInWallify, signOutWallify, updateWallifyAvatar, updateWallifyProfile, uploadWallpaper } from "./wallify-client";
-import { fetchWallifyProfile } from "./wallify-profile";
+import {
+  fetchAppApiCategories,
+  fetchAppApiVersion,
+  fetchCategoryWallpapers,
+  fetchWallifyHome,
+  fetchLatestWallpapers,
+  fetchRandomWallpaper,
+  fetchWallpaper,
+  fetchWallpaperImageMetadata,
+  fetchWallifyComments,
+  fetchWallifyFavorites,
+  fetchWallifyTerms,
+  getSessionProfile,
+  getWallifyAccountSettings,
+  postWallifyComment,
+  refreshWallifyToken,
+  searchWallpapers,
+  signInWallify,
+  signOutWallify,
+  toggleWallifyFavorite,
+  toggleWallifyLike,
+  updateWallifyAvatar,
+  updateWallifyProfile,
+  uploadWallpaper,
+} from "./wallify-client";
+
+const tokenSchema = z.string().regex(/^[a-f0-9]{48}$/i, "登录令牌格式无效");
+const wallpaperIdSchema = z.number().int().positive();
 
 export const appRouter = router({
-  // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
-  auth: router({
-    me: publicProcedure.query((opts) => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
-    }),
-  }),
-  wallifyProfile: router({
-    resolve: publicProcedure
-      .input(z.object({ profileId: z.number().int().positive().max(99_999_999) }))
-      .mutation(({ input }) => fetchWallifyProfile(input.profileId)),
-  }),
   wallify: router({
+    home: publicProcedure.query(() => fetchWallifyHome()),
+    categories: publicProcedure.query(() => fetchAppApiCategories()),
     latest: publicProcedure
       .input(z.object({ limit: z.number().int().min(1).max(40).default(20) }))
       .query(({ input }) => fetchLatestWallpapers(input.limit)),
     category: publicProcedure
       .input(z.object({ slug: z.string().regex(/^(genshin|starrail|honkai3|zzz)$/), limit: z.number().int().min(1).max(80).default(60) }))
       .query(({ input }) => fetchCategoryWallpapers(input.slug, input.limit)),
+    search: publicProcedure
+      .input(z.object({ keyword: z.string().trim().min(1).max(100), page: z.number().int().min(1).default(1), pageSize: z.number().int().min(1).max(50).default(20) }))
+      .query(({ input }) => searchWallpapers(input.keyword, input.page, input.pageSize)),
     random: publicProcedure
-      .input(z.object({ source: z.string().min(1).max(32), category: z.string().min(1).max(32) }))
-      .query(({ input }) => fetchRandomWallpaper(input.source, input.category)),
+      .input(z.object({ count: z.number().int().min(1).max(20).default(1) }))
+      .query(({ input }) => fetchRandomWallpaper(input.count)),
     detail: publicProcedure
       .input(z.object({ id: z.string().regex(/^\d+$/) }))
       .query(async ({ input }) => {
         const wallpaper = await fetchWallpaper(input.id);
-        const imageMetadata = await fetchWallpaperImageMetadata(wallpaper.fullImagePath);
+        const imageMetadata = await fetchWallpaperImageMetadata(wallpaper);
         return { ...wallpaper, imageMetadata };
       }),
+    version: publicProcedure.query(() => fetchAppApiVersion()),
     login: publicProcedure
       .input(z.object({ account: z.string().min(3).max(320), password: z.string().min(6).max(128) }))
       .mutation(({ input }) => signInWallify(input.account, input.password)),
+    refresh: publicProcedure
+      .input(z.object({ token: tokenSchema }))
+      .mutation(({ input }) => refreshWallifyToken(input.token)),
     sessionProfile: publicProcedure
-      .input(z.object({ sessionId: z.string().uuid() }))
-      .query(({ input }) => getSessionProfile(input.sessionId)),
+      .input(z.object({ token: tokenSchema }))
+      .query(({ input }) => getSessionProfile(input.token)),
     accountSettings: publicProcedure
-      .input(z.object({ sessionId: z.string().uuid() }))
-      .query(({ input }) => getWallifyAccountSettings(input.sessionId)),
+      .input(z.object({ token: tokenSchema }))
+      .query(({ input }) => getWallifyAccountSettings(input.token)),
     updateProfile: publicProcedure
       .input(z.object({
-        sessionId: z.string().uuid(),
+        token: tokenSchema,
         username: z.string().trim().min(2).max(40),
         email: z.string().trim().email().max(320),
         bio: z.string().trim().max(500),
@@ -60,7 +78,7 @@ export const appRouter = router({
       .mutation(({ input }) => updateWallifyProfile(input)),
     updateAvatar: publicProcedure
       .input(z.object({
-        sessionId: z.string().uuid(),
+        token: tokenSchema,
         fileName: z.string().trim().min(1).max(180),
         mimeType: z.string().regex(/^image\/(jpeg|png|webp|gif)$/),
         fileBase64: z.string().min(1).max(7_000_000),
@@ -68,11 +86,26 @@ export const appRouter = router({
       .mutation(({ input }) => updateWallifyAvatar(input)),
     terms: publicProcedure.query(() => fetchWallifyTerms()),
     logout: publicProcedure
-      .input(z.object({ sessionId: z.string().uuid() }))
-      .mutation(({ input }) => signOutWallify(input.sessionId)),
+      .input(z.object({ token: tokenSchema }))
+      .mutation(({ input }) => signOutWallify(input.token)),
+    like: publicProcedure
+      .input(z.object({ token: tokenSchema, wallpaperId: wallpaperIdSchema }))
+      .mutation(({ input }) => toggleWallifyLike(input.token, input.wallpaperId)),
+    favorite: publicProcedure
+      .input(z.object({ token: tokenSchema, wallpaperId: wallpaperIdSchema }))
+      .mutation(({ input }) => toggleWallifyFavorite(input.token, input.wallpaperId)),
+    favorites: publicProcedure
+      .input(z.object({ token: tokenSchema, page: z.number().int().min(1).default(1), pageSize: z.number().int().min(1).max(50).default(20) }))
+      .query(({ input }) => fetchWallifyFavorites(input.token, input.page, input.pageSize)),
+    comments: publicProcedure
+      .input(z.object({ wallpaperId: wallpaperIdSchema, page: z.number().int().min(1).default(1), pageSize: z.number().int().min(1).max(50).default(20), parentId: z.number().int().min(0).default(0) }))
+      .query(({ input }) => fetchWallifyComments(input.wallpaperId, input.page, input.pageSize, input.parentId)),
+    comment: publicProcedure
+      .input(z.object({ token: tokenSchema, wallpaperId: wallpaperIdSchema, content: z.string().trim().min(1).max(500), parentId: z.number().int().min(0).optional() }))
+      .mutation(({ input }) => postWallifyComment(input)),
     upload: publicProcedure
       .input(z.object({
-        sessionId: z.string().uuid(),
+        token: tokenSchema,
         title: z.string().min(1).max(100),
         categoryId: z.number().int().min(1).max(4),
         description: z.string().max(1000),
@@ -84,12 +117,7 @@ export const appRouter = router({
       .mutation(({ input }) => uploadWallpaper(input)),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  // The Manus template router remains available for the app shell; Wallify data is isolated above.
 });
 
 export type AppRouter = typeof appRouter;

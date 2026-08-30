@@ -9,22 +9,21 @@ import { WallpaperCard } from "@/components/wallpaper-card";
 import { WallifyServiceErrorState } from "@/components/wallify-service-error-state";
 import { ScreenContainer } from "@/components/screen-container";
 import { toWallpaper } from "@/data/wallify-feed";
-import { categories, wallpapers } from "@/data/wallpapers";
+import { categories } from "@/data/wallpapers";
 import { trpc } from "@/lib/trpc";
 
 export default function DiscoverScreen() {
-  const latest = trpc.wallify.latest.useQuery({ limit: 20 }, { staleTime: 0, refetchOnMount: "always" });
+  const home = trpc.wallify.home.useQuery(undefined, { staleTime: 0, refetchOnMount: "always", retry: 1 });
   const [refreshing, setRefreshing] = useState(false);
-  const liveWallpapers = latest.data?.map(toWallpaper) ?? [];
-  const items = liveWallpapers.length ? liveWallpapers : wallpapers;
+  const items = home.data?.latest.slice(0, 20).map(toWallpaper) ?? [];
   const refreshLatest = useCallback(async () => {
     setRefreshing(true);
     try {
-      await latest.refetch({ cancelRefetch: true });
+      await home.refetch({ cancelRefetch: true });
     } finally {
       setRefreshing(false);
     }
-  }, [latest]);
+  }, [home]);
 
   return (
     <ScreenContainer>
@@ -92,7 +91,7 @@ export default function DiscoverScreen() {
               </View></MotionView>
           </>
         }
-        ListFooterComponent={latest.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步 Wallify 最新上传…</Text></View> : latest.isError ? <WallifyServiceErrorState error={latest.error} onRetry={() => void refreshLatest()} compact /> : <Text style={styles.syncText}>已同步官网最新上传 · 下拉刷新以检查新壁纸</Text>}
+        ListFooterComponent={home.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在同步 Wallify 首页…</Text></View> : home.isError ? <WallifyServiceErrorState error={home.error} onRetry={() => void refreshLatest()} compact /> : <Text style={styles.syncText}>已同步 Wallify AppAPI 首页 · 下拉刷新以检查新壁纸</Text>}
       />
     </ScreenContainer>
   );

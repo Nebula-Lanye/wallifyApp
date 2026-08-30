@@ -3,15 +3,16 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as MediaLibrary from "expo-media-library";
 import { Image } from "expo-image";
 import { Stack, router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { WallifyServiceErrorState } from "@/components/wallify-service-error-state";
 import { wallifyImageUrl } from "@/data/wallify-image";
-import { getCategory, getWallpaper } from "@/data/wallpapers";
-import { useFavorites } from "@/hooks/use-favorites";
+import { getCategory, siteUrl } from "@/data/wallpapers";
+import { useWallifySession } from "@/hooks/use-wallify-session";
+import { getWallifyServiceIssue } from "@/lib/wallify-service-error";
 import { trpc } from "@/lib/trpc";
 
 function formatFileSize(bytes: number | null | undefined) {
@@ -28,12 +29,18 @@ export default function WallpaperDetailScreen() {
     ...remoteDetail.data,
     imageUrl: wallifyImageUrl(remoteDetail.data.thumbnailPath),
     fullImageUrl: wallifyImageUrl(remoteDetail.data.fullImagePath),
-    sourceUrl: "",
+    sourceUrl: `${siteUrl}/pages/wallpaper.php?id=${remoteDetail.data.id}`,
   } : null;
-  const wallpaper = remoteWallpaper ?? getWallpaper(id);
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const wallpaper = remoteWallpaper;
+  const { session, updateSessionExpiry } = useWallifySession();
+  const favoriteList = trpc.wallify.favorites.useQuery({ token: session?.token ?? "000000000000000000000000000000000000000000000000", page: 1, pageSize: 50 }, { enabled: Boolean(session), staleTime: 0 });
+  const favoriteAction = trpc.wallify.favorite.useMutation();
   const [imageAspectRatio, setImageAspectRatio] = useState(1);
   const imageMetadata = remoteDetail.data?.imageMetadata;
+
+  useEffect(() => {
+    void updateSessionExpiry(favoriteList.data?.tokenExpiresAt);
+  }, [favoriteList.data?.tokenExpiresAt, updateSessionExpiry]);
 
   if (remoteDetail.isLoading && !wallpaper) {
     return (
@@ -48,7 +55,7 @@ export default function WallpaperDetailScreen() {
     return (
       <ScreenContainer className="items-center justify-center px-8">
         <Stack.Screen options={{ headerShown: false }} />
-        <Text className="text-center text-xl font-bold text-foreground">没有找到这张壁纸</Text>
+        {remoteDetail.isError ? <WallifyServiceErrorState error={remoteDetail.error} onRetry={() => void remoteDetail.refetch()} /> : <Text className="text-center text-xl font-bold text-foreground">没有找到这张壁纸</Text>}
         <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryPressed]}>
           <Text style={styles.primaryText}>返回浏览</Text>
         </Pressable>
@@ -57,17 +64,21 @@ export default function WallpaperDetailScreen() {
   }
 
   const category = getCategory(wallpaper.category);
-  const favorite = isFavorite(wallpaper.id);
+  const favorite = Boolean(session && favoriteList.data?.items.some((item) => String(item.id) === wallpaper.id));
 
   const handleFavorite = async () => {
+    if (!session) {
+      Alert.alert("请先登录", "AppAPI 收藏功能需要登录 Wallify 账户。");
+      return;
+    }
     try {
-      const nowFavorite = await toggleFavorite(wallpaper.id);
-      if (Platform.OS !== "web") {
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-      if (nowFavorite && Platform.OS === "web") Alert.alert("已收藏", "这张壁纸已保存在当前浏览器中。");
-    } catch {
-      Alert.alert("暂时无法保存", "请稍后再试一次。");
+      const result = await favoriteAction.mutateAsync({ token: session.token, wallpaperId: Number(wallpaper.id) });
+      await updateSessionExpiry(result.tokenExpiresAt);
+      await favoriteList.refetch();
+      if (Platform.OS !== "web") await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      const issue = getWallifyServiceIssue(error);
+      Alert.alert(issue?.title ?? "暂时无法保存", issue?.description ?? (error instanceof Error ? error.message : "请稍后再试一次。"));
     }
   };
 
@@ -140,7 +151,7 @@ export default function WallpaperDetailScreen() {
           <View style={styles.pill}><Text style={styles.pillText}>{category?.title ?? "Wallify"}</Text></View>
           <Text style={styles.title}>{wallpaper.title}</Text>
           <Text style={styles.byline}>发布者 · {wallpaper.author}</Text>
-          <Text style={styles.description}>正在展示 Wallify 的原图预览。可直接保存至相册，并在应用内完成收藏与分享。</Text>
+          <Text style={styles.description}>{wallpaper.description || "正在展示 Wallify 的原图预览。可直接保存至相册，并在应用内完成收藏与分享。"}</Text>
           <View style={styles.fileInfo}>
             <View style={styles.fileInfoItem}>
               <Text style={styles.fileInfoLabel}>原图分辨率</Text>

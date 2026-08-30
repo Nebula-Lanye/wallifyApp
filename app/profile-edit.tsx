@@ -13,7 +13,7 @@ import { useWallifySession } from "@/hooks/use-wallify-session";
 import { trpc } from "@/lib/trpc";
 import { getWallifyServiceIssue } from "@/lib/wallify-service-error";
 
-const EMPTY_SESSION_ID = "00000000-0000-0000-0000-000000000000";
+const EMPTY_TOKEN = "000000000000000000000000000000000000000000000000";
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 type SelectedAvatar = {
@@ -43,9 +43,10 @@ function avatarMimeType(mimeType: string | null | undefined, fileName: string) {
 export default function ProfileEditScreen() {
   const { session, isLoading: isSessionLoading, saveSession } = useWallifySession();
   const { saveProfile } = useWallifyProfile();
-  const settings = trpc.wallify.accountSettings.useQuery({ sessionId: session?.sessionId ?? EMPTY_SESSION_ID }, { enabled: Boolean(session) });
+  const settings = trpc.wallify.accountSettings.useQuery({ token: session?.token ?? EMPTY_TOKEN }, { enabled: Boolean(session) });
   const updateProfile = trpc.wallify.updateProfile.useMutation();
   const updateAvatar = trpc.wallify.updateAvatar.useMutation();
+  const appApiProfileWriteUnavailable = true;
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [bio, setBio] = useState("");
@@ -59,6 +60,12 @@ export default function ProfileEditScreen() {
     setEmail(settings.data.email);
     setBio(settings.data.bio);
   }, [settings.data]);
+
+  useEffect(() => {
+    const expiresAt = settings.data?.tokenExpiresAt;
+    if (!session || !expiresAt || session.expiresAt === expiresAt) return;
+    void saveSession({ ...session, expiresAt });
+  }, [saveSession, session, settings.data?.tokenExpiresAt]);
 
   const avatarSource = useMemo(
     () => selectedAvatar?.uri ?? avatarProxy(session?.profile.avatarUrl, avatarRevision || session?.profile.avatarRevision || 0),
@@ -87,15 +94,19 @@ export default function ProfileEditScreen() {
 
   const handleSave = async () => {
     if (!session) return;
+    if (appApiProfileWriteUnavailable) {
+      Alert.alert("暂不支持编辑", "当前 AppAPI v1.4 只提供登录用户资料读取（me），尚未提供资料或头像写入 action。待接口开放后，beta 版会恢复保存功能。", [{ text: "知道了" }]);
+      return;
+    }
     try {
-      let nextProfile = await updateProfile.mutateAsync({ sessionId: session.sessionId, username, email, bio });
+      let nextProfile = await updateProfile.mutateAsync({ token: session.token, username, email, bio });
       let nextAvatarRevision: number | undefined;
       if (selectedAvatar) {
         setIsAvatarUploading(true);
         try {
           const fileBase64 = await FileSystem.readAsStringAsync(selectedAvatar.uri, { encoding: FileSystem.EncodingType.Base64 });
           nextProfile = await updateAvatar.mutateAsync({
-            sessionId: session.sessionId,
+            token: session.token,
             fileName: selectedAvatar.fileName,
             mimeType: selectedAvatar.mimeType,
             fileBase64,
@@ -111,7 +122,7 @@ export default function ProfileEditScreen() {
         ...(nextProfile as LinkedWallifyProfile),
         ...(nextAvatarRevision ? { avatarRevision: nextAvatarRevision } : {}),
       };
-      await saveSession({ sessionId: session.sessionId, profile: persistedProfile });
+      await saveSession({ token: session.token, expiresAt: session.expiresAt, profile: persistedProfile });
       await saveProfile(persistedProfile);
       Alert.alert("已保存", "你的 Wallify 个人资料和头像已更新。", [{ text: "完成", onPress: () => router.back() }]);
     } catch (error) {
@@ -130,10 +141,11 @@ export default function ProfileEditScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.nav}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]} accessibilityLabel="返回"><IconSymbol name="chevron.left" size={23} color="#FFFFFF" /></Pressable><Text style={styles.navTitle}>编辑个人资料</Text><View style={styles.navSpacer} /></View>
-          <Text style={styles.lead}>资料和头像会直接同步到你的 Wallify 账户与公开主页。</Text>
+          <Text style={styles.lead}>当前显示 AppAPI 返回的账户资料。</Text>
+          {appApiProfileWriteUnavailable ? <View style={styles.apiNotice}><IconSymbol name="info.circle" size={18} color="#FFCB6B" /><Text style={styles.apiNoticeText}>AppAPI v1.4 暂未提供资料和头像写入接口。当前页面为只读预览，保存功能将在接口开放后启用。</Text></View> : null}
           {settings.isLoading || isSessionLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /></View> : <View style={styles.form}>
             <Text style={styles.label}>头像</Text>
-            <Pressable onPress={() => void chooseAvatar()} disabled={isSaving} style={({ pressed }) => [styles.avatarPicker, (pressed || isSaving) && styles.pressed]} accessibilityLabel="选择头像" accessibilityState={{ busy: isAvatarUploadInProgress }}>
+            <Pressable onPress={() => void chooseAvatar()} disabled={isSaving || appApiProfileWriteUnavailable} style={({ pressed }) => [styles.avatarPicker, (pressed || isSaving || appApiProfileWriteUnavailable) && styles.pressed]} accessibilityLabel="选择头像" accessibilityState={{ busy: isAvatarUploadInProgress, disabled: appApiProfileWriteUnavailable }}>
               <View style={styles.avatarVisual}>
                 {avatarSource ? <Image source={{ uri: avatarSource }} style={styles.avatar} contentFit="cover" cachePolicy="none" /> : <View style={styles.avatarFallback}><IconSymbol name="person.crop.circle.fill" size={44} color="#B8B7C7" /></View>}
                 {isAvatarUploadInProgress ? <View style={styles.avatarProgressOverlay}><ActivityIndicator size="small" color="#FFFFFF" /></View> : null}
@@ -141,10 +153,10 @@ export default function ProfileEditScreen() {
               <View style={styles.avatarCopy}><Text style={styles.avatarTitle}>{isAvatarUploadInProgress ? "正在上传头像…" : selectedAvatar ? "新头像待保存" : "更换头像"}</Text><Text style={styles.avatarHint}>{isAvatarUploadInProgress ? "请保持应用开启，完成后会自动刷新头像" : "从相册选择方形头像 · 最大 5MB"}</Text></View>
               <View style={styles.avatarAction}>{isAvatarUploadInProgress ? <ActivityIndicator size="small" color="#C9D7FF" /> : <IconSymbol name="photo.on.rectangle" size={19} color="#C9D7FF" />}</View>
             </Pressable>
-            <Text style={styles.label}>用户名</Text><TextInput value={username} onChangeText={setUsername} autoCapitalize="none" maxLength={40} placeholder="用户名" placeholderTextColor="#727181" style={styles.input} returnKeyType="next" />
-            <Text style={styles.label}>邮箱</Text><TextInput value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" maxLength={320} placeholder="邮箱" placeholderTextColor="#727181" style={styles.input} returnKeyType="next" />
-            <Text style={styles.label}>个人简介</Text><TextInput value={bio} onChangeText={setBio} maxLength={500} multiline textAlignVertical="top" placeholder="介绍一下自己" placeholderTextColor="#727181" style={[styles.input, styles.bioInput]} /><Text style={styles.counter}>{bio.length}/500</Text>
-            <Pressable onPress={() => void handleSave()} disabled={isSaving || !settings.data} style={({ pressed }) => [styles.saveButton, (pressed || isSaving || !settings.data) && styles.pressed]}>{isSaving ? <View style={styles.savingButtonContent}><ActivityIndicator color="#FFFFFF" /><Text style={styles.saveText}>{isAvatarUploadInProgress ? "正在上传头像…" : "正在保存资料…"}</Text></View> : <Text style={styles.saveText}>保存资料</Text>}</Pressable>
+            <Text style={styles.label}>用户名</Text><TextInput value={username} onChangeText={setUsername} editable={!appApiProfileWriteUnavailable} autoCapitalize="none" maxLength={40} placeholder="用户名" placeholderTextColor="#727181" style={styles.input} returnKeyType="next" />
+            <Text style={styles.label}>邮箱</Text><TextInput value={email} onChangeText={setEmail} editable={!appApiProfileWriteUnavailable} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" maxLength={320} placeholder="邮箱" placeholderTextColor="#727181" style={styles.input} returnKeyType="next" />
+            <Text style={styles.label}>个人简介</Text><TextInput value={bio} onChangeText={setBio} editable={!appApiProfileWriteUnavailable} maxLength={500} multiline textAlignVertical="top" placeholder="介绍一下自己" placeholderTextColor="#727181" style={[styles.input, styles.bioInput]} /><Text style={styles.counter}>{bio.length}/500</Text>
+            <Pressable onPress={() => void handleSave()} disabled={isSaving || !settings.data || appApiProfileWriteUnavailable} style={({ pressed }) => [styles.saveButton, (pressed || isSaving || !settings.data || appApiProfileWriteUnavailable) && styles.pressed]}>{isSaving ? <View style={styles.savingButtonContent}><ActivityIndicator color="#FFFFFF" /><Text style={styles.saveText}>{isAvatarUploadInProgress ? "正在上传头像…" : "正在保存资料…"}</Text></View> : <Text style={styles.saveText}>{appApiProfileWriteUnavailable ? "等待接口开放" : "保存资料"}</Text>}</Pressable>
           </View>}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -153,5 +165,6 @@ export default function ProfileEditScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 }, content: { flexGrow: 1, padding: 16, paddingBottom: 42 }, nav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, back: { alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 22, backgroundColor: "#171722" }, navTitle: { color: "#F6F6FB", fontSize: 17, fontWeight: "800" }, navSpacer: { width: 44 }, lead: { marginTop: 18, color: "#A6A5B5", fontSize: 13, lineHeight: 19 }, form: { marginTop: 22, padding: 17, borderRadius: 19, backgroundColor: "#171722" }, loading: { alignItems: "center", justifyContent: "center", minHeight: 200 }, label: { marginTop: 10, marginBottom: 8, color: "#DAD9E5", fontSize: 13, fontWeight: "800" }, avatarPicker: { flexDirection: "row", alignItems: "center", minHeight: 84, borderRadius: 16, backgroundColor: "#292838", padding: 11 }, avatarVisual: { width: 62, height: 62 }, avatar: { width: 62, height: 62, borderRadius: 31, backgroundColor: "#3B3A4A" }, avatarFallback: { alignItems: "center", justifyContent: "center", width: 62, height: 62, borderRadius: 31, backgroundColor: "#3B3A4A" }, avatarProgressOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", borderRadius: 31, backgroundColor: "rgba(12, 12, 20, 0.66)" }, avatarCopy: { flex: 1, marginLeft: 12 }, avatarTitle: { color: "#F6F6FB", fontSize: 14, fontWeight: "800" }, avatarHint: { marginTop: 4, color: "#A6A5B5", fontSize: 11, lineHeight: 16 }, avatarAction: { alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 11, backgroundColor: "#4C83FF33" }, input: { minHeight: 52, borderRadius: 14, backgroundColor: "#292838", color: "#F6F6FB", paddingHorizontal: 14, fontSize: 15 }, bioInput: { minHeight: 112, paddingTop: 13 }, counter: { alignSelf: "flex-end", marginTop: 6, color: "#777686", fontSize: 11 }, saveButton: { alignItems: "center", justifyContent: "center", minHeight: 51, marginTop: 20, borderRadius: 15, backgroundColor: "#4C83FF" }, savingButtonContent: { flexDirection: "row", alignItems: "center", gap: 9 }, saveText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" }, pressed: { opacity: 0.74, transform: [{ scale: 0.98 }] }, emptyTitle: { marginTop: 13, color: "#F6F6FB", fontSize: 20, fontWeight: "800" }, emptyCopy: { marginTop: 6, color: "#A6A5B5", fontSize: 13, textAlign: "center", lineHeight: 19 },
+    flex: { flex: 1 }, content: { flexGrow: 1, padding: 16, paddingBottom: 42 }, apiNotice: { flexDirection: "row", gap: 9, marginTop: 16, borderRadius: 14, backgroundColor: "#3A301C", padding: 13 }, apiNoticeText: { flex: 1, color: "#F2D58B", fontSize: 12, lineHeight: 18 },
+ nav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, back: { alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: 22, backgroundColor: "#171722" }, navTitle: { color: "#F6F6FB", fontSize: 17, fontWeight: "800" }, navSpacer: { width: 44 }, lead: { marginTop: 18, color: "#A6A5B5", fontSize: 13, lineHeight: 19 }, form: { marginTop: 22, padding: 17, borderRadius: 19, backgroundColor: "#171722" }, loading: { alignItems: "center", justifyContent: "center", minHeight: 200 }, label: { marginTop: 10, marginBottom: 8, color: "#DAD9E5", fontSize: 13, fontWeight: "800" }, avatarPicker: { flexDirection: "row", alignItems: "center", minHeight: 84, borderRadius: 16, backgroundColor: "#292838", padding: 11 }, avatarVisual: { width: 62, height: 62 }, avatar: { width: 62, height: 62, borderRadius: 31, backgroundColor: "#3B3A4A" }, avatarFallback: { alignItems: "center", justifyContent: "center", width: 62, height: 62, borderRadius: 31, backgroundColor: "#3B3A4A" }, avatarProgressOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", borderRadius: 31, backgroundColor: "rgba(12, 12, 20, 0.66)" }, avatarCopy: { flex: 1, marginLeft: 12 }, avatarTitle: { color: "#F6F6FB", fontSize: 14, fontWeight: "800" }, avatarHint: { marginTop: 4, color: "#A6A5B5", fontSize: 11, lineHeight: 16 }, avatarAction: { alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 11, backgroundColor: "#4C83FF33" }, input: { minHeight: 52, borderRadius: 14, backgroundColor: "#292838", color: "#F6F6FB", paddingHorizontal: 14, fontSize: 15 }, bioInput: { minHeight: 112, paddingTop: 13 }, counter: { alignSelf: "flex-end", marginTop: 6, color: "#777686", fontSize: 11 }, saveButton: { alignItems: "center", justifyContent: "center", minHeight: 51, marginTop: 20, borderRadius: 15, backgroundColor: "#4C83FF" }, savingButtonContent: { flexDirection: "row", alignItems: "center", gap: 9 }, saveText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" }, pressed: { opacity: 0.74, transform: [{ scale: 0.98 }] }, emptyTitle: { marginTop: 13, color: "#F6F6FB", fontSize: 20, fontWeight: "800" }, emptyCopy: { marginTop: 6, color: "#A6A5B5", fontSize: 13, textAlign: "center", lineHeight: 19 },
 });

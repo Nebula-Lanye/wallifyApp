@@ -7,7 +7,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { WallpaperCard } from "@/components/wallpaper-card";
 import { WallifyServiceErrorState } from "@/components/wallify-service-error-state";
-import { GameSlug, getCategory, wallpapers } from "@/data/wallpapers";
+import { getCategory } from "@/data/wallpapers";
 import { toWallpaper } from "@/data/wallify-feed";
 import { trpc } from "@/lib/trpc";
 
@@ -17,9 +17,8 @@ export default function CategoryScreen() {
   const normalizedSlug = category ? slug : "genshin";
   const liveCategory = trpc.wallify.category.useQuery({ slug: normalizedSlug, limit: 60 }, { enabled: Boolean(category), staleTime: 0, refetchOnMount: "always" });
   const [refreshing, setRefreshing] = useState(false);
-  const liveItems = liveCategory.data?.map(toWallpaper) ?? [];
-  const items = liveItems.length ? liveItems : slug === "random" ? [...wallpapers].sort((a, b) => b.id.localeCompare(a.id)) : wallpapers.filter((item) => item.category === (slug as GameSlug));
-  const title = slug === "random" ? "随机发现" : category?.title ?? "壁纸浏览";
+  const items = liveCategory.data?.map(toWallpaper) ?? [];
+  const title = category?.title ?? "壁纸浏览";
   const refreshCategory = useCallback(async () => {
     if (!category) return;
     setRefreshing(true);
@@ -48,7 +47,7 @@ export default function CategoryScreen() {
             </Pressable>
             <View style={styles.headingArea}>
               <Text style={styles.title}>{title}</Text>
-              <Text style={styles.subtitle}>{slug === "random" ? "从 Wallify 的公开壁纸中随意发现灵感。" : "正在浏览此游戏分类的公开壁纸。"}</Text>
+              <Text style={styles.subtitle}>正在浏览 AppAPI 返回的公开壁纸。</Text>
             </View>
           </View>
         }

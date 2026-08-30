@@ -1,22 +1,22 @@
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { EmptyState } from "@/components/empty-state";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { WallpaperCard } from "@/components/wallpaper-card";
-import { getCategory, wallpapers } from "@/data/wallpapers";
+import { WallifyServiceErrorState } from "@/components/wallify-service-error-state";
+import { toWallpaper } from "@/data/wallify-feed";
+import { trpc } from "@/lib/trpc";
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const results = useMemo(() => {
-    if (!normalizedQuery) return [];
-    return wallpapers.filter((wallpaper) => {
-      const category = getCategory(wallpaper.category);
-      return `${wallpaper.title} ${category?.title ?? ""}`.toLocaleLowerCase().includes(normalizedQuery);
-    });
-  }, [normalizedQuery]);
+  const normalizedQuery = query.trim();
+  const search = trpc.wallify.search.useQuery(
+    { keyword: normalizedQuery || "wallify", page: 1, pageSize: 40 },
+    { enabled: Boolean(normalizedQuery), staleTime: 0, refetchOnMount: "always", retry: 1 },
+  );
+  const results = useMemo(() => search.data?.map(toWallpaper) ?? [], [search.data]);
 
   return (
     <ScreenContainer>
@@ -51,8 +51,8 @@ export default function SearchScreen() {
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
           renderItem={({ item, index }) => <WallpaperCard wallpaper={item} index={index} />}
-          ListHeaderComponent={<Text style={styles.resultLabel}>{results.length ? `找到 ${results.length} 张壁纸` : ""}</Text>}
-          ListEmptyComponent={<EmptyState title="没有找到匹配壁纸" description="换一个角色名或游戏分类再试试。" />}
+          ListHeaderComponent={<Text style={styles.resultLabel}>{search.isLoading ? "正在搜索…" : results.length ? `找到 ${results.length} 张壁纸` : ""}</Text>}
+          ListEmptyComponent={search.isLoading ? <View style={styles.loading}><ActivityIndicator color="#7D9EFF" /><Text style={styles.loadingText}>正在搜索 Wallify…</Text></View> : search.isError ? <WallifyServiceErrorState error={search.error} onRetry={() => void search.refetch()} /> : <EmptyState title="没有找到匹配壁纸" description="换一个角色名或游戏分类再试试。" />}
         />
       ) : (
         <View style={styles.tip}>
@@ -77,4 +77,6 @@ const styles = StyleSheet.create({
   resultLabel: { marginTop: 21, marginBottom: 12, color: "#A6A5B5", fontSize: 13, lineHeight: 18 },
   tip: { flexDirection: "row", alignItems: "center", gap: 10, margin: 16, borderRadius: 15, backgroundColor: "#171722", padding: 15 },
   tipText: { flex: 1, color: "#DAD9E5", fontSize: 13, lineHeight: 19 },
+  loading: { alignItems: "center", gap: 8, paddingVertical: 42 },
+  loadingText: { color: "#A6A5B5", fontSize: 12 },
 });

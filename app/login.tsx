@@ -20,13 +20,13 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!account.trim() || !password) {
-      Alert.alert("请填写账号与密码", "账号密码只用于本次加密登录请求，不会保存在设备中。");
+      Alert.alert("请填写账号与密码", "账号密码只用于本次登录请求；登录成功后仅保存 AppAPI 会话令牌。");
       return;
     }
     try {
       const result = await login.mutateAsync({ account: account.trim(), password });
       const profile = result.profile as LinkedWallifyProfile;
-      await saveSession({ sessionId: result.sessionId, profile });
+      await saveSession({ token: result.token, expiresAt: result.expiresAt, profile });
       await saveProfile(profile);
       setPassword("");
       router.replace(destination as never);
@@ -42,7 +42,7 @@ export default function LoginScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.nav}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]} accessibilityLabel="返回"><IconSymbol name="chevron.left" size={23} color="#FFFFFF" /></Pressable></View>
-          <View style={styles.hero}><View style={styles.heroIcon}><IconSymbol name="lock.fill" size={28} color="#FF8D58" /></View><Text style={styles.title}>登录 Wallify</Text><Text style={styles.subtitle}>登录后即可上传壁纸和使用账户权限。密码仅用于本次安全请求，不会保存在设备中。</Text></View>
+          <View style={styles.hero}><View style={styles.heroIcon}><IconSymbol name="lock.fill" size={28} color="#FF8D58" /></View><Text style={styles.title}>登录 Wallify</Text><Text style={styles.subtitle}>登录后即可使用 AppAPI 账户权限。密码仅用于本次登录请求，不会保存在设备中。</Text></View>
           <View style={styles.form}><Text style={styles.label}>账号</Text><TextInput value={account} onChangeText={setAccount} autoCapitalize="none" autoCorrect={false} autoComplete="username" keyboardType="email-address" placeholder="邮箱或用户名" placeholderTextColor="#727181" style={styles.input} returnKeyType="next" /><Text style={styles.label}>密码</Text><TextInput value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" placeholder="密码" placeholderTextColor="#727181" style={styles.input} returnKeyType="done" onSubmitEditing={() => void handleLogin()} /><Pressable onPress={() => void handleLogin()} disabled={login.isPending} style={({ pressed }) => [styles.loginButton, (pressed || login.isPending) && styles.pressed]}>{login.isPending ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.loginText}>登录</Text>}</Pressable></View>
         </ScrollView>
       </KeyboardAvoidingView>

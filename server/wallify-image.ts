@@ -3,11 +3,25 @@ import axios from "axios";
 
 import { WALLIFY_ORIGIN } from "./wallify-client";
 
-const ALLOWED_IMAGE_PATH = /^\/(?:uploads\/wallpapers\/(?:thumbs\/)?[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp|gif)|UserAvatar\/\d+\/avatar\.(?:jpg|jpeg|png|webp))$/i;
+const ALLOWED_IMAGE_PATH = /^\/(?:uploads\/wallpapers\/(?:thumbs\/)?[A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp|gif)|UserAvatar\/\d+\/avatar\.(?:jpg|jpeg|png|webp)|assets\/images\/default-avatar\.png)$/i;
 
 export function registerWallifyImageRoutes(app: Express) {
   app.get("/api/wallify/image", async (req, res) => {
-    const imagePath = typeof req.query.path === "string" ? req.query.path : "";
+    const rawPath = typeof req.query.path === "string" ? req.query.path : "";
+    let imagePath = rawPath;
+    try {
+      if (/^https?:\/\//i.test(rawPath)) {
+        const parsed = new URL(rawPath);
+        if (parsed.origin !== WALLIFY_ORIGIN) {
+          res.status(400).json({ message: "不支持的图片域名" });
+          return;
+        }
+        imagePath = parsed.pathname;
+      }
+    } catch {
+      res.status(400).json({ message: "不支持的图片地址" });
+      return;
+    }
     if (!ALLOWED_IMAGE_PATH.test(imagePath)) {
       res.status(400).json({ message: "不支持的图片地址" });
       return;

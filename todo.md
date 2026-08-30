@@ -107,3 +107,13 @@
 - [x] 将仓库 README 重写为面向普通用户的 Wallify 介绍
 - [x] 将开发、构建与密钥说明迁移至维护者文档
 - [x] 审校用户 README 不包含维护者配置内容并推送 GitHub
+
+- [x] 在 beta 分支建立 AppAPI JSON 客户端与统一响应/业务错误处理
+- [x] 将 beta 登录、刷新、退出和资料读取迁移到 48 位 token 会话
+- [x] 将 beta 首页、最新、分类、搜索、详情和随机壁纸切换到 AppAPI 数据
+- [x] 将 beta 点赞、收藏、收藏列表和评论接入 AppAPI 登录态接口
+- [x] 保留文档未提供正式 action 的头像/壁纸上传能力，并明确 beta 兼容边界
+- [x] 使用 SecureStore 保存 beta token，清理旧 session-cookie 会话数据
+- [x] 为 AppAPI 适配、token 滑动续期和错误码补充自动化测试
+- [x] 验证 beta 类型检查、测试、公开 API 连通性和 main 分支未被修改
+- [ ] 将 beta API 改造提交并推送到 GitHub beta 分支

@@ -2,7 +2,6 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import * as MediaLibrary from "expo-media-library";
 import { Image } from "expo-image";
-import { useVideoPlayer, VideoView } from "expo-video";
 import { Stack, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -16,28 +15,14 @@ import { trpc } from "@/lib/trpc";
 type RandomItem = {
   url: string;
   name: string;
-  type: "image" | "video";
-  source: string;
+  type: "image";
+  source: "appapi";
   category: string;
 };
 
-function RandomVideo({ url }: { url: string }) {
-  const player = useVideoPlayer(url, (instance) => {
-    instance.loop = true;
-    instance.muted = true;
-    instance.play();
-  });
-
-  return (
-    <View style={styles.videoWrap}>
-      <VideoView style={styles.video} player={player} contentFit="contain" nativeControls playsInline surfaceType="textureView" />
-    </View>
-  );
-}
-
 export default function RandomWallpapersScreen() {
-  const [source, setSource] = useState("alcy");
-  const [category, setCategory] = useState("ycy");
+  const [source, setSource] = useState("appapi");
+  const [category, setCategory] = useState("random");
   const [current, setCurrent] = useState<RandomItem | null>(null);
   const [history, setHistory] = useState<RandomItem[]>([]);
   const [showingHistory, setShowingHistory] = useState(false);
@@ -47,7 +32,7 @@ export default function RandomWallpapersScreen() {
     [category, selectedSource],
   );
   const random = trpc.wallify.random.useQuery(
-    { source, category },
+    { count: 1 },
     { enabled: !showingHistory, staleTime: 0, refetchOnMount: "always", retry: 1 },
   );
 
@@ -95,17 +80,17 @@ export default function RandomWallpapersScreen() {
       return;
     }
     try {
-      const permission = await MediaLibrary.requestPermissionsAsync(true, ["photo", "video"]);
+      const permission = await MediaLibrary.requestPermissionsAsync(true, ["photo"]);
       if (!permission.granted) {
         Alert.alert("需要相册权限", "允许后才能保存随机壁纸。\n");
         return;
       }
-      const extension = current.type === "video" ? "mp4" : "jpg";
+      const extension = "jpg";
       const uri = `${FileSystem.cacheDirectory}wallify-random-${Date.now()}.${extension}`;
       const downloaded = await FileSystem.downloadAsync(current.url, uri);
       await MediaLibrary.saveToLibraryAsync(downloaded.uri);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("已保存到相册", current.type === "video" ? "随机动图已保存。" : "随机壁纸已保存。");
+      Alert.alert("已保存到相册", "随机壁纸已保存。");
     } catch {
       Alert.alert("保存失败", "这张随机内容暂时无法下载，请换一张后重试。");
     }
@@ -126,7 +111,7 @@ export default function RandomWallpapersScreen() {
           </Pressable>
           <View style={styles.headerCopy}>
             <Text style={styles.title}>随机二次元</Text>
-            <Text style={styles.subtitle}>多来源、多分类，始终在应用内浏览。</Text>
+            <Text style={styles.subtitle}>从 Wallify AppAPI 公开壁纸中随机发现灵感。</Text>
           </View>
         </View>
 
@@ -147,7 +132,7 @@ export default function RandomWallpapersScreen() {
         </ScrollView>
 
         <View style={styles.media}>
-          {isLoadingFirstItem ? <View style={styles.center}><ActivityIndicator color="#7D9EFF" size="large" /><Text style={styles.loadingText}>正在获取随机壁纸…</Text></View> : activeItem?.type === "video" ? <RandomVideo url={activeItem.url} /> : activeItem?.url ? <Image source={{ uri: activeItem.url }} style={styles.image} contentFit="contain" transition={220} /> : <View style={styles.center}><Text style={styles.loadingText}>暂时没有获取到随机壁纸。</Text></View>}
+          {isLoadingFirstItem ? <View style={styles.center}><ActivityIndicator color="#7D9EFF" size="large" /><Text style={styles.loadingText}>正在获取随机壁纸…</Text></View> : activeItem?.url ? <Image source={{ uri: activeItem.url }} style={styles.image} contentFit="contain" transition={220} /> : <View style={styles.center}><Text style={styles.loadingText}>暂时没有获取到随机壁纸。</Text></View>}
           {activeItem && random.isFetching && !showingHistory ? <View style={styles.refreshing}><ActivityIndicator color="#FFFFFF" size="small" /><Text style={styles.refreshingText}>正在换一张…</Text></View> : null}
         </View>
 
@@ -156,7 +141,7 @@ export default function RandomWallpapersScreen() {
         <View style={styles.meta}>
           <Text style={styles.metaLabel}>{sourceForItem.label} · {categoryForItem.label}</Text>
           <Text style={styles.metaTitle}>{activeItem?.name || selectedCategory.label}</Text>
-          <Text style={styles.metaDescription}>图片来自 {sourceForItem.hint}，仅供个人收藏使用。</Text>
+          <Text style={styles.metaDescription}>图片来自 Wallify AppAPI，适合在应用内预览和保存。</Text>
         </View>
 
         <View style={styles.actions}>
@@ -195,8 +180,6 @@ const styles = StyleSheet.create({
   categoryTextActive: { color: "#C8C0FF" },
   media: { overflow: "hidden", aspectRatio: 0.78, borderRadius: 22, backgroundColor: "#171722" },
   image: { width: "100%", height: "100%" },
-  videoWrap: { flex: 1, backgroundColor: "#111118" },
-  video: { width: "100%", height: "100%" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 25 },
   loadingText: { color: "#A6A5B5", fontSize: 13, lineHeight: 19, textAlign: "center" },
   refreshing: { position: "absolute", top: 14, right: 14, flexDirection: "row", gap: 6, alignItems: "center", borderRadius: 999, backgroundColor: "rgba(11,11,18,0.76)", paddingHorizontal: 10, paddingVertical: 7 },

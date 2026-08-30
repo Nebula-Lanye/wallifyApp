@@ -1,24 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { categories, getCategory, getWallpaper, siteUrl, wallpapers } from "../data/wallpapers";
+import { categories, getCategory, siteUrl } from "../data/wallpapers";
 
-describe("Wallify wallpaper data", () => {
-  it("provides the four public game categories from the source site", () => {
+describe("Wallify beta presentation metadata", () => {
+  it("keeps the four official game categories for native navigation", () => {
     expect(categories.map((category) => category.slug)).toEqual(["genshin", "starrail", "honkai3", "zzz"]);
+    expect(getCategory("starrail")?.title).toBe("崩坏：星穹铁道");
   });
 
-  it("resolves a wallpaper and routes image loading through the native proxy", () => {
-    const wallpaper = getWallpaper("34");
-
-    expect(wallpaper?.title).toBe("遐蝶：雨夜霓虹");
-    expect(wallpaper?.sourceUrl).toBe(`${siteUrl}/pages/wallpaper.php?id=34`);
-    expect(wallpaper?.imageUrl).toContain("/api/wallify/image?path=");
-    expect(wallpaper?.fullImageUrl).toContain("wp_6a886be625b882.64680580.jpg");
-  });
-
-  it("maps every wallpaper to a known category", () => {
-    for (const wallpaper of wallpapers) {
-      expect(getCategory(wallpaper.category)).toBeDefined();
-    }
+  it("keeps the official site origin for sharing and update links", () => {
+    expect(siteUrl).toBe("https://lkr2312.dpdns.org");
   });
 });
