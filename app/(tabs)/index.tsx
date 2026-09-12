@@ -45,7 +45,7 @@ export default function DiscoverScreen() {
                   <Text style={styles.heading}>发现你的下一张壁纸</Text>
                   <Text style={styles.subheading}>米哈游游戏壁纸精选，适合手机浏览与收藏。</Text>
                 </View>
-                <Image source={{ uri: "https://lkr2312.dpdns.org/assets/images/logo-nav.png?v=2" }} style={styles.logo} contentFit="contain" />
+                <Image source={{ uri: "http://lkr2312.dpdns.org/assets/images/logo-nav.png?v=2" }} style={styles.logo} contentFit="contain" />
               </View>
             </MotionView>
 

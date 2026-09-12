@@ -21,7 +21,7 @@ export type Wallpaper = {
   featured?: boolean;
 };
 
-export const siteUrl = "https://lkr2312.dpdns.org";
+export const siteUrl = "http://lkr2312.dpdns.org";
 
 export const categories: GameCategory[] = [
   { slug: "genshin", title: "原神", shortTitle: "原神", icon: "sparkles", tint: "#75C8FF" },

@@ -9,8 +9,8 @@ describe("Wallify public profile parser", () => {
     expect(profile).toEqual({
       profileId: 2,
       nickname: "admin",
-      avatarUrl: "https://lkr2312.dpdns.org/UserAvatar/2/avatar.jpg",
-      profileUrl: "https://lkr2312.dpdns.org/pages/profile.php?id=2",
+      avatarUrl: "http://lkr2312.dpdns.org/UserAvatar/2/avatar.jpg",
+      profileUrl: "http://lkr2312.dpdns.org/pages/profile.php?id=2",
       signature: "永远相信美好的事情即将发生",
       uploadCount: 6,
       followingCount: 1,

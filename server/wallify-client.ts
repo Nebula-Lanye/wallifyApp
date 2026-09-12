@@ -7,7 +7,7 @@ import type { WallifyProfile } from "./wallify-profile";
 import { fetchWallifyProfile } from "./wallify-profile";
 import { createWallifyOriginUnavailableError, isWallifyOriginUnavailableError, isWallifyOriginUnavailableStatus } from "./wallify-origin-error";
 
-export const WALLIFY_ORIGIN = "https://lkr2312.dpdns.org";
+export const WALLIFY_ORIGIN = "http://lkr2312.dpdns.org";
 
 type RemoteSession = {
   cookie: string;

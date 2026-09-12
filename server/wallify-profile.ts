@@ -2,7 +2,7 @@ import axios from "axios";
 
 import { createWallifyOriginUnavailableError, isWallifyOriginUnavailableStatus } from "./wallify-origin-error";
 
-const WALLIFY_ORIGIN = "https://lkr2312.dpdns.org";
+const WALLIFY_ORIGIN = "http://lkr2312.dpdns.org";
 
 export type WallifyProfile = {
   profileId: number;
