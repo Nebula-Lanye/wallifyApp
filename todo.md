@@ -118,5 +118,5 @@
 
 - [x] 将 Wallify 访问地址统一改为 http://lkr2312.dpdns.org/
 - [x] 仅在 main 分支提交并推送地址变更
-- [ ] 删除远程 beta 分支及本地 beta 工作副本
+- [x] 删除远程 beta 分支及本地 beta 工作副本
 - [x] 验证 main 构建、测试和分支状态
